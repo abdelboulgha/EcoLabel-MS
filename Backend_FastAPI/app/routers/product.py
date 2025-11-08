@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Dict, Any
+import json
 from app.database.connection import get_db
 from app.models.product import (
     ProductParseRequest,
@@ -18,6 +19,18 @@ barcode_service = BarcodeService()
 ocr_service = OCRService()
 scraper_service = ScraperService()
 
+def _filter_product_data(product_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Filtre les données pour ne garder que les champs demandés"""
+    filtered = {
+        "gtin": product_data.get("gtin", ""),
+        "name": product_data.get("name"),
+        "brand": product_data.get("brand"),
+        "composition": product_data.get("composition"),
+        "packaging": product_data.get("packaging", {}),
+        "netWeight_g": product_data.get("netWeight_g")
+    }
+    return filtered
+
 @router.post("/parse", response_model=ProductParseResponse)
 async def parse_product(
     request: ProductParseRequest,
@@ -25,17 +38,31 @@ async def parse_product(
 ):
     """
     Parse un produit à partir de son code-barres
+    Retourne un JSON avec: gtin, name, brand, composition, packaging, netWeight_g
     """
     try:
+        print(f"\n{'='*80}")
+        print(f"🔍 Requête reçue - Code-barres: {request.barcode}")
+        print(f"{'='*80}")
+        
         # 1. Vérifier si le produit existe déjà en base
         existing_product = db.query(Product).filter(Product.gtin == request.barcode).first()
         if existing_product:
-            return ProductParseResponse(
+            # Filtrer les données existantes
+            filtered_data = _filter_product_data(existing_product.normalized_data)
+            response = ProductParseResponse(
                 success=True,
                 gtin=request.barcode,
-                product_data=existing_product.normalized_data,
+                product_data=filtered_data,
                 source="database"
             )
+            
+            # Afficher le JSON dans la console
+            print("\n📦 JSON RETOURNÉ (depuis la base de données):")
+            print(json.dumps(response.dict(), indent=2, ensure_ascii=False))
+            print(f"{'='*80}\n")
+            
+            return response
         
         # 2. Recherche via Open Food Facts
         product_data = barcode_service.search_by_barcode(request.barcode)
@@ -60,36 +87,55 @@ async def parse_product(
                 source = "scraper"
         
         if not product_data:
+            print(f"\n❌ Produit non trouvé pour le code-barres: {request.barcode}")
+            print(f"{'='*80}\n")
             raise HTTPException(
                 status_code=404,
                 detail=f"Produit avec code-barres {request.barcode} non trouvé"
             )
         
-        # 5. Sauvegarder en base de données
+        # Filtrer les données pour ne garder que les champs demandés
+        filtered_data = _filter_product_data(product_data)
+        
+        print(f"\n📊 Données brutes extraites:")
+        print(json.dumps(product_data, indent=2, ensure_ascii=False))
+        print(f"\n✅ Données filtrées:")
+        print(json.dumps(filtered_data, indent=2, ensure_ascii=False))
+        
+        # 5. Sauvegarder en base de données (garder toutes les données brutes)
         new_product = Product(
             gtin=request.barcode,
-            name=product_data.get("name"),
-            brand=product_data.get("brand"),
-            category=product_data.get("category"),
-            composition=product_data.get("composition"),
-            origin=product_data.get("origin"),
-            raw_data=product_data,
-            normalized_data=product_data
+            name=filtered_data.get("name"),
+            brand=filtered_data.get("brand"),
+            category=None,  # Non inclus dans le format demandé
+            composition=filtered_data.get("composition"),
+            origin=None,  # Non inclus dans le format demandé
+            raw_data=product_data,  # Garder les données brutes
+            normalized_data=filtered_data  # Données normalisées filtrées
         )
         db.add(new_product)
         db.commit()
         db.refresh(new_product)
         
-        return ProductParseResponse(
+        response = ProductParseResponse(
             success=True,
             gtin=request.barcode,
-            product_data=product_data,
+            product_data=filtered_data,
             source=source
         )
+        
+        # Afficher le JSON final dans la console
+        print(f"\n📦 JSON FINAL RETOURNÉ (source: {source}):")
+        print(json.dumps(response.dict(), indent=2, ensure_ascii=False))
+        print(f"{'='*80}\n")
+        
+        return response
     
     except HTTPException:
         raise
     except Exception as e:
+        print(f"\n❌ ERREUR: {str(e)}")
+        print(f"{'='*80}\n")
         raise HTTPException(status_code=500, detail=f"Erreur serveur: {str(e)}")
 
 @router.post("/parse/batch", response_model=List[ProductParseResponse])
@@ -119,4 +165,13 @@ async def get_product(gtin: str, db: Session = Depends(get_db)):
     product = db.query(Product).filter(Product.gtin == gtin).first()
     if not product:
         raise HTTPException(status_code=404, detail="Produit non trouvé")
-    return product.normalized_data
+    # Filtrer les données pour ne retourner que les champs demandés
+    filtered_data = _filter_product_data(product.normalized_data)
+    
+    # Afficher le JSON dans la console
+    print(f"\n{'='*80}")
+    print(f"📦 GET /product/{gtin} - JSON RETOURNÉ:")
+    print(json.dumps(filtered_data, indent=2, ensure_ascii=False))
+    print(f"{'='*80}\n")
+    
+    return filtered_data
