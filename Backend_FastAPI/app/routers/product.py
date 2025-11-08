@@ -2,14 +2,15 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any
 import json
-from app.database.connection import get_db
+# Commenter temporairement les imports de base de données
+# from app.database.connection import get_db
 from app.models.product import (
     ProductParseRequest,
     ProductParseResponse,
     BatchProductParseRequest,
     NormalizedProductData
 )
-from app.models.database import Product
+# from app.models.database import Product
 from app.services.barcode_service import BarcodeService
 from app.services.ocr_service import OCRService
 from app.services.scraper_service import ScraperService
@@ -34,42 +35,43 @@ def _filter_product_data(product_data: Dict[str, Any]) -> Dict[str, Any]:
 @router.post("/parse", response_model=ProductParseResponse)
 async def parse_product(
     request: ProductParseRequest,
-    db: Session = Depends(get_db)
+    # db: Session = Depends(get_db)  # Commenté temporairement
 ):
     """
     Parse un produit à partir de son code-barres
     Retourne un JSON avec: gtin, name, brand, composition, packaging, netWeight_g
+    MODE TEST: Les données ne sont PAS enregistrées en base de données
     """
     try:
         print(f"\n{'='*80}")
         print(f"🔍 Requête reçue - Code-barres: {request.barcode}")
         print(f"{'='*80}")
         
-        # 1. Vérifier si le produit existe déjà en base
-        existing_product = db.query(Product).filter(Product.gtin == request.barcode).first()
-        if existing_product:
-            # Filtrer les données existantes
-            filtered_data = _filter_product_data(existing_product.normalized_data)
-            response = ProductParseResponse(
-                success=True,
-                gtin=request.barcode,
-                product_data=filtered_data,
-                source="database"
-            )
-            
-            # Afficher le JSON dans la console
-            print("\n📦 JSON RETOURNÉ (depuis la base de données):")
-            print(json.dumps(response.dict(), indent=2, ensure_ascii=False))
-            print(f"{'='*80}\n")
-            
-            return response
+        # ============================================
+        # PARTIE COMMENTÉE: Vérification en base de données
+        # ============================================
+        # existing_product = db.query(Product).filter(Product.gtin == request.barcode).first()
+        # if existing_product:
+        #     filtered_data = _filter_product_data(existing_product.normalized_data)
+        #     response = ProductParseResponse(
+        #         success=True,
+        #         gtin=request.barcode,
+        #         product_data=filtered_data,
+        #         source="database"
+        #     )
+        #     print("\n📦 JSON RETOURNÉ (depuis la base de données):")
+        #     print(json.dumps(response.dict(), indent=2, ensure_ascii=False))
+        #     print(f"{'='*80}\n")
+        #     return response
         
-        # 2. Recherche via Open Food Facts
+        # 1. Recherche via Open Food Facts
+        print("🔎 Recherche via Open Food Facts...")
         product_data = barcode_service.search_by_barcode(request.barcode)
         source = "openfoodfacts"
         
-        # 3. Si pas trouvé et image fournie, utiliser OCR
+        # 2. Si pas trouvé et image fournie, utiliser OCR
         if not product_data and request.image_base64:
+            print("🔎 Tentative avec OCR...")
             ocr_text = ocr_service.extract_text_from_image(request.image_base64)
             if ocr_text:
                 ocr_data = ocr_service.parse_product_info_from_text(ocr_text)
@@ -79,8 +81,9 @@ async def parse_product(
                 }
                 source = "ocr"
         
-        # 4. Si toujours pas trouvé, essayer le scraping
+        # 3. Si toujours pas trouvé, essayer le scraping
         if not product_data:
+            print("🔎 Tentative avec web scraping...")
             scraped_data = scraper_service.search_product_info(request.barcode)
             if scraped_data:
                 product_data = scraped_data
@@ -97,25 +100,29 @@ async def parse_product(
         # Filtrer les données pour ne garder que les champs demandés
         filtered_data = _filter_product_data(product_data)
         
+        # Afficher les données dans la console
         print(f"\n📊 Données brutes extraites:")
         print(json.dumps(product_data, indent=2, ensure_ascii=False))
-        print(f"\n✅ Données filtrées:")
+        print(f"\n✅ Données filtrées (format final):")
         print(json.dumps(filtered_data, indent=2, ensure_ascii=False))
         
-        # 5. Sauvegarder en base de données (garder toutes les données brutes)
-        new_product = Product(
-            gtin=request.barcode,
-            name=filtered_data.get("name"),
-            brand=filtered_data.get("brand"),
-            category=None,  # Non inclus dans le format demandé
-            composition=filtered_data.get("composition"),
-            origin=None,  # Non inclus dans le format demandé
-            raw_data=product_data,  # Garder les données brutes
-            normalized_data=filtered_data  # Données normalisées filtrées
-        )
-        db.add(new_product)
-        db.commit()
-        db.refresh(new_product)
+        # ============================================
+        # PARTIE COMMENTÉE: Sauvegarde en base de données
+        # ============================================
+        # new_product = Product(
+        #     gtin=request.barcode,
+        #     name=filtered_data.get("name"),
+        #     brand=filtered_data.get("brand"),
+        #     category=None,
+        #     composition=filtered_data.get("composition"),
+        #     origin=None,
+        #     raw_data=product_data,
+        #     normalized_data=filtered_data
+        # )
+        # db.add(new_product)
+        # db.commit()
+        # db.refresh(new_product)
+        # print("💾 Données sauvegardées en base de données")
         
         response = ProductParseResponse(
             success=True,
@@ -141,13 +148,13 @@ async def parse_product(
 @router.post("/parse/batch", response_model=List[ProductParseResponse])
 async def parse_batch_products(
     request: BatchProductParseRequest,
-    db: Session = Depends(get_db)
+    # db: Session = Depends(get_db)  # Commenté temporairement
 ):
-    """Parse un lot de produits"""
+    """Parse un lot de produits (MODE TEST: pas de sauvegarde en base)"""
     results = []
     for product_request in request.products:
         try:
-            result = await parse_product(product_request, db)
+            result = await parse_product(product_request)  # Retirer db
             results.append(result)
         except Exception as e:
             results.append(ProductParseResponse(
@@ -159,19 +166,20 @@ async def parse_batch_products(
             ))
     return results
 
-@router.get("/{gtin}")
-async def get_product(gtin: str, db: Session = Depends(get_db)):
-    """Récupère un produit par son GTIN"""
-    product = db.query(Product).filter(Product.gtin == gtin).first()
-    if not product:
-        raise HTTPException(status_code=404, detail="Produit non trouvé")
-    # Filtrer les données pour ne retourner que les champs demandés
-    filtered_data = _filter_product_data(product.normalized_data)
-    
-    # Afficher le JSON dans la console
-    print(f"\n{'='*80}")
-    print(f"📦 GET /product/{gtin} - JSON RETOURNÉ:")
-    print(json.dumps(filtered_data, indent=2, ensure_ascii=False))
-    print(f"{'='*80}\n")
-    
-    return filtered_data
+# ============================================
+# ROUTE GET COMMENTÉE (nécessite la base de données)
+# ============================================
+# @router.get("/{gtin}")
+# async def get_product(gtin: str, db: Session = Depends(get_db)):
+#     """Récupère un produit par son GTIN"""
+#     product = db.query(Product).filter(Product.gtin == gtin).first()
+#     if not product:
+#         raise HTTPException(status_code=404, detail="Produit non trouvé")
+#     filtered_data = _filter_product_data(product.normalized_data)
+#     
+#     print(f"\n{'='*80}")
+#     print(f"📦 GET /product/{gtin} - JSON RETOURNÉ:")
+#     print(json.dumps(filtered_data, indent=2, ensure_ascii=False))
+#     print(f"{'='*80}\n")
+#     
+#     return filtered_data
