@@ -64,10 +64,15 @@ async def parse_product(
         #     print(f"{'='*80}\n")
         #     return response
         
-        # 1. Recherche via Open Food Facts
-        print("🔎 Recherche via Open Food Facts...")
+        # 1. Recherche via bases de données (Open Food Facts, Open Beauty Facts, etc.)
+        print("🔎 Recherche via bases de données...")
         product_data = barcode_service.search_by_barcode(request.barcode)
-        source = "openfoodfacts"
+        
+        # Récupérer la source depuis les données retournées (si trouvé)
+        if product_data:
+            source = product_data.get("source", "unknown")
+        else:
+            source = None
         
         # 2. Si pas trouvé et image fournie, utiliser OCR
         if not product_data and request.image_base64:
@@ -87,7 +92,7 @@ async def parse_product(
             scraped_data = scraper_service.search_product_info(request.barcode)
             if scraped_data:
                 product_data = scraped_data
-                source = "scraper"
+                source = scraped_data.get("source", "scraper")
         
         if not product_data:
             print(f"\n❌ Produit non trouvé pour le code-barres: {request.barcode}")
@@ -178,7 +183,7 @@ async def parse_batch_products(
 #     filtered_data = _filter_product_data(product.normalized_data)
 #     
 #     print(f"\n{'='*80}")
-#     print(f"📦 GET /product/{gtin} - JSON RETOURNÉ:")
+#     print(f"�� GET /product/{gtin} - JSON RETOURNÉ:")
 #     print(json.dumps(filtered_data, indent=2, ensure_ascii=False))
 #     print(f"{'='*80}\n")
 #     
