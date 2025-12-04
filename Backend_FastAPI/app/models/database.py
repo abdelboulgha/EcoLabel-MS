@@ -13,7 +13,7 @@ class Product(Base):
     composition = Column(Text)
     origin = Column(String(100))
     packaging = Column(Text)
-    raw_data = Column(JSON)  # Données brutes extraites
-    normalized_data = Column(JSON)  # Données normalisées
+    raw_data = Column(JSON)  
+    normalized_data = Column(JSON)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

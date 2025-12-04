@@ -1,16 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Body
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any
 import json
-# Commenter temporairement les imports de base de données
-# from app.database.connection import get_db
+
 from app.models.product import (
     ProductParseRequest,
     ProductParseResponse,
     BatchProductParseRequest,
     NormalizedProductData
 )
-# from app.models.database import Product
 from app.services.barcode_service import BarcodeService
 from app.services.ocr_service import OCRService
 from app.services.scraper_service import ScraperService
@@ -170,6 +168,79 @@ async def parse_batch_products(
                 message=str(e)
             ))
     return results
+
+@router.post("/parse-from-image", response_model=ProductParseResponse)
+async def parse_product_from_image(
+    request: dict = Body(...),
+):
+    """
+    Parse un produit à partir d'une image avec OCR
+    L'utilisateur fournit le nom et le poids manuellement
+    """
+    try:
+        print(f"\n{'='*80}")
+        print(f"🖼️  Requête reçue - Analyse d'image avec OCR")
+        print(f"{'='*80}")
+        
+        image_base64 = request.get('image_base64')
+        product_name = request.get('product_name')
+        product_weight_g = request.get('product_weight_g')
+        
+        if not image_base64:
+            raise HTTPException(status_code=400, detail="Image base64 requise")
+        if not product_name:
+            raise HTTPException(status_code=400, detail="Nom du produit requis")
+        if not product_weight_g:
+            raise HTTPException(status_code=400, detail="Poids du produit requis")
+        
+        # Extraire le texte avec OCR
+        print("🔎 Extraction de texte avec OCR...")
+        ocr_text = ocr_service.extract_text_from_image(image_base64)
+        
+        if not ocr_text:
+            raise HTTPException(status_code=400, detail="Impossible d'extraire le texte de l'image")
+        
+        # Parser les informations depuis le texte OCR
+        ocr_data = ocr_service.parse_product_info_from_text(ocr_text)
+        
+        # Construire les données du produit avec les informations fournies
+        product_data = {
+            "gtin": "IMAGE_ONLY",  # Pas de code-barres pour les images
+            "name": product_name,
+            "brand": ocr_data.get("brand"),
+            "composition": ocr_data.get("composition"),
+            "origin": ocr_data.get("origin"),
+            "netWeight_g": product_weight_g,
+            "raw_text": ocr_text,
+        }
+        
+        # Filtrer les données
+        filtered_data = _filter_product_data(product_data)
+        
+        print(f"\n📊 Données extraites:")
+        print(json.dumps(product_data, indent=2, ensure_ascii=False))
+        print(f"\n✅ Données filtrées:")
+        print(json.dumps(filtered_data, indent=2, ensure_ascii=False))
+        
+        response = ProductParseResponse(
+            success=True,
+            gtin="IMAGE_ONLY",
+            product_data=filtered_data,
+            source="ocr"
+        )
+        
+        print(f"\n📦 JSON FINAL RETOURNÉ (source: ocr):")
+        print(json.dumps(response.dict(), indent=2, ensure_ascii=False))
+        print(f"{'='*80}\n")
+        
+        return response
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"\n❌ ERREUR: {str(e)}")
+        print(f"{'='*80}\n")
+        raise HTTPException(status_code=500, detail=f"Erreur serveur: {str(e)}")
 
 # ============================================
 # ROUTE GET COMMENTÉE (nécessite la base de données)
