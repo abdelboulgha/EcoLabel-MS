@@ -45,7 +45,7 @@ class NLPInput(BaseModel):
 
 @app.on_event("startup")
 def startup():
-    register_service("ms2-nlp-ingredients", 8002)
+    register_service("NLP-INGREDIENTS", 8002)
 @app.get("/debug/model")
 def debug_model():
     return {
@@ -151,14 +151,14 @@ def extract_entities(input: NLPInput, db: Session = Depends(get_db)):
         "ingredients": ingredients
     }
 
-@app.post("/analyze")
+@app.post("/nlp/extract")
 def analyze_pipeline(input: NLPInput, db: Session = Depends(get_db)):
 
     # STEP 1 — NLP extraction (reuse existing logic)
     extraction = extract_entities(input, db)
 
     # STEP 2 — Call LCA
-    lca_url = discover("ms3-lca-lite")
+    lca_url = discover("LCA-LITE")
     lca_response = requests.post(
         f"{lca_url}/lca/calc",
         json={
@@ -169,7 +169,7 @@ def analyze_pipeline(input: NLPInput, db: Session = Depends(get_db)):
     ).json()
 
     # STEP 3 — Call Scoring
-    scoring_url = discover("ms4-scoring")
+    scoring_url = discover("SCORING")
     score_response = requests.post(
         f"{scoring_url}/score/compute",
         json=lca_response

@@ -62,7 +62,7 @@ def register_service(name: str, port: int):
 
 @app.on_event("startup")
 def startup():
-    register_service("ms3-lca-lite", 8003)
+    register_service("LCA-LITE", 8003)
 
 @app.post("/lca/calc")
 def calculate_lca(ms2: MS2Output, db: Session = Depends(get_db)):

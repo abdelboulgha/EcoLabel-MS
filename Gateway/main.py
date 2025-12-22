@@ -6,7 +6,7 @@ import requests
 
 
 app = FastAPI(title="EcoLabel API Gateway")
-CONSUL_URL = "http://localhost:8500/v1/agent/service/register"
+CONSUL_URL = "http://consul:8500/v1/agent/service/register"
 
 def register_service(name: str, port: int):
     payload = {
@@ -22,25 +22,25 @@ def register_service(name: str, port: int):
 
 @app.on_event("startup")
 def startup():
-    register_service("api-gateway", 8080)
+    register_service("GATEWAY", 8080)
 
 # -------- ROUTES -------- #
 
-@app.api_route("/parser/{path:path}", methods=["GET", "POST"])
+@app.api_route("/PARSER-PRODUIT/{path:path}", methods=["GET", "POST"])
 async def parser_gateway(path: str, request: Request):
-    return await proxy_request("ms1-parser-produit", path, request)
+    return await proxy_request("PARSER-PRODUIT", path, request)
 
-@app.api_route("/nlp/{path:path}", methods=["GET", "POST"])
+@app.api_route("/NLP-INGREDIENTS/{path:path}", methods=["GET", "POST"])
 async def nlp_gateway(path: str, request: Request):
-    return await proxy_request("ms2-nlp-ingredients", path, request)
+    return await proxy_request("NLP-INGREDIENTS", path, request)
 
-@app.api_route("/lca/{path:path}", methods=["GET", "POST"])
+@app.api_route("/LCA-LITE/{path:path}", methods=["GET", "POST"])
 async def lca_gateway(path: str, request: Request):
-    return await proxy_request("ms3-lca-lite", path, request)
+    return await proxy_request("LCA-LITE", path, request)
 
-@app.api_route("/score/{path:path}", methods=["GET", "POST"])
+@app.api_route("/SCORING/{path:path}", methods=["GET", "POST"])
 async def scoring_gateway(path: str, request: Request):
-    return await proxy_request("ms4-scoring", path, request)
+    return await proxy_request("SCORING", path, request)
 
 # -------- HEALTH -------- #
 

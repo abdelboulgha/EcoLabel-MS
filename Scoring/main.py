@@ -135,7 +135,7 @@ app = FastAPI(title="EcoLabel-MS4 – Service de Scoring")
 
 @app.on_event("startup")
 def startup():
-    register_service("ms4-scoring", 8004)
+    register_service("SCORING", 8004)
 
 
 @app.post("/score/compute", response_model=EcoScoreResponse)
