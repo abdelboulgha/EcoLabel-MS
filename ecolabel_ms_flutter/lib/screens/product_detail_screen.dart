@@ -1,15 +1,25 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import '../models/product.dart';
+import '../services/api_service.dart';
+import 'final_result_screen.dart';
 
-class ProductDetailScreen extends StatelessWidget {
+class ProductDetailScreen extends StatefulWidget {
   final ProductParseResponse product;
 
   const ProductDetailScreen({super.key, required this.product});
 
   @override
+  State<ProductDetailScreen> createState() => _ProductDetailScreenState();
+}
+
+class _ProductDetailScreenState extends State<ProductDetailScreen> {
+  final ApiService _apiService = ApiService();
+  bool _isCalculatingScore = false;
+
+  @override
   Widget build(BuildContext context) {
-    final productData = product.productData;
+    final productData = widget.product.productData;
     
     // Afficher les données dans la console pour debug
     print('📦 Données reçues:');
@@ -34,6 +44,10 @@ class ProductDetailScreen extends StatelessWidget {
           children: [
             // En-tête avec GTIN
             _buildHeaderCard(context),
+            const SizedBox(height: 16),
+            
+            // Bouton pour voir le score écologique
+            _buildEcoScoreButton(context),
             const SizedBox(height: 16),
             
             // Informations principales
@@ -98,7 +112,7 @@ class ProductDetailScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        product.gtin,
+                        widget.product.gtin,
                         style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: Colors.green.shade900,
@@ -115,10 +129,10 @@ class ProductDetailScreen extends StatelessWidget {
               children: [
                 Chip(
                   avatar: const Icon(Icons.check_circle, size: 18, color: Colors.green),
-                  label: Text('Source: ${product.source}'),
+                  label: Text('Source: ${widget.product.source}'),
                   backgroundColor: Colors.green.shade100,
                 ),
-                if (product.success)
+                if (widget.product.success)
                   const Chip(
                     avatar: Icon(Icons.done, size: 18, color: Colors.green),
                     label: Text('Succès'),
@@ -479,7 +493,7 @@ class ProductDetailScreen extends StatelessWidget {
           width: double.maxFinite,
           child: SingleChildScrollView(
             child: SelectableText(
-              _formatJson(product.productData),
+              _formatJson(widget.product.productData),
               style: const TextStyle(fontFamily: 'monospace', fontSize: 11),
             ),
           ),
@@ -499,5 +513,200 @@ class ProductDetailScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Widget _buildEcoScoreButton(BuildContext context) {
+    return Card(
+      elevation: 4,
+      color: Colors.green.shade50,
+      child: InkWell(
+        onTap: _isCalculatingScore ? null : _calculateEcoScore,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.green,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.eco,
+                  color: Colors.white,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Voir le Score Écologique',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _isCalculatingScore
+                          ? 'Calcul en cours...'
+                          : 'Analyser l\'impact environnemental',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (_isCalculatingScore)
+                const Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: CircularProgressIndicator(),
+                )
+              else
+                const Icon(
+                  Icons.arrow_forward_ios,
+                  color: Colors.green,
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _calculateEcoScore() async {
+    setState(() => _isCalculatingScore = true);
+
+    try {
+      final productData = widget.product.productData;
+      
+      // Préparer les données MS3 pour le scoring
+      // On essaie d'extraire les données depuis productData ou on utilise des valeurs par défaut
+      final productName = productData['name']?.toString() ?? 
+                         productData['product_name']?.toString() ?? 
+                         'Produit';
+      
+      // Extraire les ingrédients depuis la composition
+      final composition = productData['composition']?.toString() ?? '';
+      final ingredientsBreakdown = _extractIngredientsBreakdown(composition);
+      
+      // Calculer les impacts totaux (si disponibles dans productData, sinon valeurs par défaut)
+      final totalImpacts = _extractTotalImpacts(productData);
+      
+      // Préparer les données MS3
+      final ms3Data = {
+        'product_name': productName,
+        'total_impacts': {
+          'co2_g': totalImpacts['co2_g'] ?? 500.0,
+          'water_L': totalImpacts['water_L'] ?? 30.0,
+          'energy_MJ': totalImpacts['energy_MJ'] ?? 15.0,
+        },
+        'ingredients_breakdown': ingredientsBreakdown,
+      };
+      
+      // Appeler le service de scoring
+      final ecoScore = await _apiService.computeEcoScore(
+        productName: productName,
+        ms3Data: ms3Data,
+      );
+      
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => FinalResultScreen(
+              ecoScore: ecoScore,
+              productInfo: widget.product,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors du calcul du score: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isCalculatingScore = false);
+      }
+    }
+  }
+
+  List<Map<String, dynamic>> _extractIngredientsBreakdown(String composition) {
+    // Si la composition est vide, retourner une liste vide
+    if (composition.isEmpty) {
+      return [];
+    }
+    
+    // Essayer de parser la composition comme une liste d'ingrédients
+    // Format attendu: liste d'objets avec ingredient, mass_g, etc.
+    // Pour l'instant, on crée une structure basique
+    try {
+      // Si c'est déjà une liste JSON
+      if (composition.trim().startsWith('[')) {
+        final parsed = jsonDecode(composition);
+        if (parsed is List) {
+          return parsed.map((item) => item as Map<String, dynamic>).toList();
+        }
+      }
+    } catch (e) {
+      // Si ce n'est pas du JSON, on traite comme une chaîne simple
+    }
+    
+    // Si c'est une chaîne simple, on crée une structure basique
+    // En production, vous devriez parser cela avec NLP
+    final ingredients = composition.split(',').map((ing) => ing.trim()).where((ing) => ing.isNotEmpty).toList();
+    
+    if (ingredients.isEmpty) {
+      return [];
+    }
+    
+    // Créer une structure basique pour chaque ingrédient
+    final totalIngredients = ingredients.length;
+    final avgMass = 100.0 / totalIngredients; // Répartir 100g entre les ingrédients
+    
+    return ingredients.map((ingredient) {
+      return {
+        'ingredient': ingredient,
+        'mass_g': avgMass,
+        'co2_g': 0.0, // Sera calculé par LCA
+        'water_L': 0.0,
+        'energy_MJ': 0.0,
+        'missing_factor': true, // Indique que les facteurs ne sont pas disponibles
+      };
+    }).toList();
+  }
+
+  Map<String, double> _extractTotalImpacts(Map<String, dynamic> productData) {
+    // Essayer d'extraire les impacts depuis productData
+    final impacts = <String, double>{};
+    
+    // Chercher dans différentes clés possibles
+    if (productData['total_impacts'] != null) {
+      final totalImpacts = productData['total_impacts'] as Map<String, dynamic>;
+      impacts['co2_g'] = (totalImpacts['co2_g'] ?? 0.0).toDouble();
+      impacts['water_L'] = (totalImpacts['water_L'] ?? totalImpacts['water_l'] ?? 0.0).toDouble();
+      impacts['energy_MJ'] = (totalImpacts['energy_MJ'] ?? totalImpacts['energy_mj'] ?? 0.0).toDouble();
+    } else {
+      // Valeurs par défaut si non disponibles
+      impacts['co2_g'] = 500.0;
+      impacts['water_L'] = 30.0;
+      impacts['energy_MJ'] = 15.0;
+    }
+    
+    return impacts;
   }
 }

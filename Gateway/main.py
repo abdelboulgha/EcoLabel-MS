@@ -22,7 +22,7 @@ def register_service(name: str, port: int):
 
 @app.on_event("startup")
 def startup():
-    register_service("GATEWAY", 8080)
+    register_service("GATEWAY", 8081)
 
 # -------- ROUTES -------- #
 

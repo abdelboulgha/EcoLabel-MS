@@ -24,7 +24,8 @@ def _filter_product_data(product_data: Dict[str, Any]) -> Dict[str, Any]:
         "brand": product_data.get("brand"),
         "composition": product_data.get("composition"),
         "packaging": product_data.get("packaging", {}),
-        "netWeight_g": product_data.get("netWeight_g")
+        "netWeight_g": product_data.get("netWeight_g"),
+        "raw_text": product_data.get("raw_text")  # Inclure raw_text pour NLP
     }
     return filtered
 
