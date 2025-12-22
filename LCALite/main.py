@@ -1,3 +1,6 @@
+import csv
+from pathlib import Path
+
 from fastapi import FastAPI, Depends
 from pydantic import BaseModel
 import re
@@ -9,9 +12,55 @@ from database.models import LCAResult
 import psycopg2  # kept for existing factor queries
 import requests
 import socket
+
+
 # -------- Create tables --------
 Base.metadata.create_all(bind=engine)
 
+CSV_PATH = Path("Csv files/lca_factors_import_unique.csv")
+
+
+def load_lca_factors_if_empty():
+    conn = get_factor_db()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT COUNT(*) FROM lca_factors")
+    count = cursor.fetchone()[0]
+
+    if count > 0:
+        print("✅ LCA factors already loaded")
+        cursor.close()
+        conn.close()
+        return
+
+    print("📥 Loading LCA factors from CSV...")
+
+    with open(CSV_PATH, newline="", encoding="utf-8") as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            cursor.execute(
+                """
+                INSERT INTO lca_factors (
+                    ingredient_id,
+                    co2_per_kg,
+                    water_L_per_kg,
+                    energy_MJ_per_kg
+                )
+                VALUES (%s, %s, %s, %s)
+                ON CONFLICT (ingredient_id) DO NOTHING
+                """,
+                (
+                    row["ingredient_id"],
+                    float(row["co2_per_kg"]),
+                    float(row["water_L_per_kg"]),
+                    float(row["energy_MJ_per_kg"]),
+                ),
+            )
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+    print("✅ LCA factors loaded successfully")
 # -------- Request Model --------
 class MS2Output(BaseModel):
     product_name: str
@@ -40,10 +89,10 @@ app = FastAPI(title="EcoLabel-MS3 LCA Calculator")
 # -------- PostgreSQL helper for factors --------
 def get_factor_db():
     return psycopg2.connect(
-        host="localhost",
+        host="postgres-lca",
         database="lca_lite",
-        user="postgres",
-        password="123456"
+        user="lca_user",
+        password="lca_pass"
     )
 
 CONSUL_URL = "http://localhost:8500/v1/agent/service/register"
@@ -63,6 +112,7 @@ def register_service(name: str, port: int):
 @app.on_event("startup")
 def startup():
     register_service("LCA-LITE", 8003)
+    load_lca_factors_if_empty()
 
 @app.post("/lca/calc")
 def calculate_lca(ms2: MS2Output, db: Session = Depends(get_db)):

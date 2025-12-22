@@ -12,8 +12,8 @@ from sqlalchemy.orm import Session
 from database.connection import get_db, Base, engine
 from database.models import NERExtraction
 
-MODEL_PATH = "bert_ms2_ner_model"
-# MODEL_PATH = os.getenv("MODEL_PATH", "/models/bert")
+# MODEL_PATH = "bert_ms2_ner_model"
+MODEL_PATH = os.getenv("MODEL_PATH", "/models/bert")
 
 # Create tables
 Base.metadata.create_all(bind=engine)
