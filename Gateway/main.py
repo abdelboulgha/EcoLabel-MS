@@ -6,7 +6,7 @@ import requests
 
 
 app = FastAPI(title="EcoLabel API Gateway")
-CONSUL_URL = "http://consul:8500/v1/agent/service/register"
+CONSUL_URL = "http://localhost:8500/v1/agent/service/register"
 
 def register_service(name: str, port: int):
     payload = {
