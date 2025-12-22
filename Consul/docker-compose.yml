@@ -1,0 +1,14 @@
+version: "3.8"
+
+services:
+  consul:
+    image: consul:1.15
+    command: agent -dev -client=0.0.0.0
+    ports:
+      - "8500:8500"
+    networks:
+      - ecolabel-network
+
+networks:
+  ecolabel-network:
+    driver: bridge

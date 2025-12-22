@@ -1,0 +1,54 @@
+version: "3.8"
+
+services:
+
+  consul:
+    image: consul:1.15
+    command: agent -dev -client=0.0.0.0
+    ports:
+      - "8500:8500"
+
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: ecolabel
+      POSTGRES_USER: ecolabel_user
+      POSTGRES_PASSWORD: ecolabel_pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  gateway:
+    build: Gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - consul
+
+  nlp:
+    build: NLPIngredients
+    environment:
+      - DATABASE_URL=postgresql://ecolabel_user:ecolabel_pass@postgres:5432/ecolabel
+    depends_on:
+      - consul
+      - postgres
+    volumes:
+      - ./bert_ms2_ner_model:/models/bert
+
+#  lca:
+#    build: LCALite
+#    environment:
+#      - DATABASE_URL=postgresql://ecolabel_user:ecolabel_pass@postgres:5432/ecolabel
+#    depends_on:
+#      - consul
+#      - postgres
+#
+#  scoring:
+#    build: Scoring
+#    environment:
+#      - DATABASE_URL=postgresql://ecolabel_user:ecolabel_pass@postgres:5432/ecolabel
+#    depends_on:
+#      - consul
+#      - postgres
+
+volumes:
+  postgres_data:
