@@ -1,0 +1,40 @@
+# Requirements consolidés pour tous les microservices EcoLabel-MS
+# Ce fichier contient toutes les dépendances nécessaires pour:
+# - Gateway
+# - NLPIngredients
+# - LCALite
+# - ParserProduit
+# - Scoring
+
+# Framework web
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+
+# Base de données
+sqlalchemy==2.0.23
+psycopg2-binary==2.9.9
+
+# Validation et configuration
+pydantic==2.5.0
+pydantic-settings==2.1.0
+
+# Utilitaires HTTP et parsing
+requests==2.31.0
+python-multipart==0.0.6
+python-dotenv==1.0.0
+
+# Web scraping et parsing HTML
+beautifulsoup4==4.12.2
+lxml==4.9.3
+
+# OCR et traitement d'images
+pytesseract==0.3.10
+Pillow==10.2.0
+
+# Code-barres
+python-barcode==0.15.1
+
+# Machine Learning (pour NLPIngredients)
+transformers
+torch
+

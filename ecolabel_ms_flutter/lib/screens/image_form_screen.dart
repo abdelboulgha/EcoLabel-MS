@@ -40,17 +40,56 @@ class _ImageFormScreenState extends State<ImageFormScreen> {
     setState(() => _isProcessing = true);
 
     try {
-      final response = await _apiService.parseProductFromImage(
+      // Étape 1: Parser l'image avec OCR
+      final parseResponse = await _apiService.parseProductFromImage(
         imageBase64: widget.imageBase64,
         productName: _nameController.text.trim(),
         productWeight: _weightController.text.trim(),
       );
 
+      // Étape 2: Extraire le texte pour NLP
+      final productData = parseResponse.productData;
+      
+      // Priorité 1: Utiliser raw_text s'il est disponible (texte OCR brut)
+      String? nlpText = productData['raw_text']?.toString();
+      
+      // Priorité 2: Construire le texte à partir des données extraites
+      if (nlpText == null || nlpText.isEmpty) {
+        final productName = productData['name']?.toString() ?? _nameController.text.trim();
+        final productWeight = productData['netWeight_g']?.toString() ?? _weightController.text.trim();
+        final composition = productData['composition']?.toString() ?? '';
+        
+        // Construire le texte au format attendu par NLP
+        // Format: "NomProduit Poids. ingrédient1, ingrédient2, ..."
+        nlpText = '$productName ${productWeight}g.';
+        if (composition.isNotEmpty) {
+          nlpText += ' $composition';
+        }
+      }
+
+      print('📝 Texte pour NLP: $nlpText');
+
+      // Étape 3: Appeler NLP pour extraire les ingrédients
+      try {
+        final nlpResponse = await _apiService.extractNLP(text: nlpText);
+        print('✅ Réponse NLP: $nlpResponse');
+        
+        // Enrichir les données du produit avec les résultats NLP
+        if (nlpResponse['ingredients'] != null) {
+          productData['nlp_ingredients'] = nlpResponse['ingredients'];
+          productData['nlp_product_name'] = nlpResponse['product_name'];
+          productData['nlp_weight'] = nlpResponse['weight'];
+        }
+      } catch (nlpError) {
+        print('⚠️ Erreur NLP (continuons quand même): $nlpError');
+        // On continue même si NLP échoue
+      }
+
       if (mounted) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => ProductDetailScreen(product: response),
+            builder: (context) => ProductDetailScreen(product: parseResponse),
           ),
         );
       }
@@ -60,6 +99,7 @@ class _ImageFormScreenState extends State<ImageFormScreen> {
           SnackBar(
             content: Text('Erreur: $e'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
           ),
         );
       }
@@ -184,29 +224,29 @@ class _ImageFormScreenState extends State<ImageFormScreen> {
               const SizedBox(height: 16),
               
               // Note
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.blue.shade200),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.info_outline, color: Colors.blue.shade700),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'L\'image sera analysée avec OCR pour extraire les ingrédients.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.blue.shade900,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              // Container(
+              //   padding: const EdgeInsets.all(12),
+              //   decoration: BoxDecoration(
+              //     color: Colors.blue.shade50,
+              //     borderRadius: BorderRadius.circular(8),
+              //     border: Border.all(color: Colors.blue.shade200),
+              //   ),
+              //   child: Row(
+              //     children: [
+              //       Icon(Icons.info_outline, color: Colors.blue.shade700),
+              //       const SizedBox(width: 8),
+              //       Expanded(
+              //         child: Text(
+              //           'L\'image sera analysée avec OCR pour extraire les ingrédients.',
+              //           style: TextStyle(
+              //             fontSize: 12,
+              //             color: Colors.blue.shade900,
+              //           ),
+              //         ),
+              //       ),
+              //     ],
+              //   ),
+              // ),
             ],
           ),
         ),
