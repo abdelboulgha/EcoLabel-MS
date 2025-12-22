@@ -292,7 +292,7 @@ La base de données utilise les données **Agribalyse** pour les calculs LCA. Le
 
 <table>
   <tr>
-    <td align="center"><strong>Abdelillah Boulgh</strong></td>
+    <td align="center"><strong>Abdelillah Boulgha</strong></td>
     <td align="center"><strong>Ahmed Elhamri</strong></td>
     <td align="center"><strong>Fatimazohra Lamzoghi</strong></td>
     <td align="center"><strong>Ouarda Azizi</strong></td>
