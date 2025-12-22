@@ -4,7 +4,7 @@ import '../models/product.dart';
 
 class ApiService {
   // Utilisez votre IP Wi-Fi
-  static const String baseUrl = 'http://192.168.1.12:8080/PARSER-PRODUIT/product/parse-from-image';
+  static const String baseUrl = 'http://192.168.1.12:8080/PARSER-PRODUIT/';
   
   Future<ProductParseResponse> parseProduct({
     required String barcode,
