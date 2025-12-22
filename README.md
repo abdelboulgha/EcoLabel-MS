@@ -3,13 +3,7 @@
 Système de microservices pour l'analyse et le scoring écologique de produits alimentaires.
 
 ## 📹 Démonstration
-
-<div align="center">
-  <video width="800" controls>
-    <source src="docs/demo.mp4" type="video/mp4">
-    Votre navigateur ne supporte pas la lecture de vidéos.
-  </video>
-</div>
+https://github.com/user-attachments/assets/6f895f15-c030-46ab-bd9c-8dceeb78196e
 
 ## 📋 Description
 
