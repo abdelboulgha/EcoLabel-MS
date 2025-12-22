@@ -8,7 +8,10 @@ services:
       - "8500:8500"
     networks:
       - ecolabel-network
+    
+
 
 networks:
   ecolabel-network:
     driver: bridge
+

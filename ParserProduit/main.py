@@ -39,7 +39,7 @@ def register_service(name: str, port: int):
 # Inclure les routes
 @app.on_event("startup")
 def startup():
-    register_service("ms1-parser-produit", 8001)
+    register_service("PARSER-PRODUIT", 8001)
 
 app.include_router(product.router, prefix="/product", tags=["product"])
 @app.get("/")

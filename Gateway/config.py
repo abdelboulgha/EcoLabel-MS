@@ -1,4 +1,4 @@
-CONSUL_HOST = "localhost"
+CONSUL_HOST = "consul"
 CONSUL_PORT = 8500
 
 TIMEOUT = 5

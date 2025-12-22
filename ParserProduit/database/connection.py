@@ -8,7 +8,7 @@ load_dotenv()
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql://user:1234@localhost:5432/ecolabel_db"
+    "postgresql://user:1234@localhost:5432/parser_db"
 )
 
 engine = create_engine(DATABASE_URL, echo=True)
