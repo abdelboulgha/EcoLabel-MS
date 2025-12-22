@@ -4,7 +4,7 @@ import '../models/product.dart';
 
 class ApiService {
   // Utilisez votre IP Wi-Fi
-  static const String baseUrl = 'http://192.168.11.200:8081';
+  static const String baseUrl = 'http://10.136.126.232:8081';
   
   Future<ProductParseResponse> parseProduct({
     required String barcode,

@@ -224,29 +224,29 @@ class _ImageFormScreenState extends State<ImageFormScreen> {
               const SizedBox(height: 16),
               
               // Note
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.blue.shade200),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.info_outline, color: Colors.blue.shade700),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'L\'image sera analysée avec OCR pour extraire les ingrédients.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.blue.shade900,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              // Container(
+              //   padding: const EdgeInsets.all(12),
+              //   decoration: BoxDecoration(
+              //     color: Colors.blue.shade50,
+              //     borderRadius: BorderRadius.circular(8),
+              //     border: Border.all(color: Colors.blue.shade200),
+              //   ),
+              //   child: Row(
+              //     children: [
+              //       Icon(Icons.info_outline, color: Colors.blue.shade700),
+              //       const SizedBox(width: 8),
+              //       Expanded(
+              //         child: Text(
+              //           'L\'image sera analysée avec OCR pour extraire les ingrédients.',
+              //           style: TextStyle(
+              //             fontSize: 12,
+              //             color: Colors.blue.shade900,
+              //           ),
+              //         ),
+              //       ),
+              //     ],
+              //   ),
+              // ),
             ],
           ),
         ),

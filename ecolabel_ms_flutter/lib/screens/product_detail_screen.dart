@@ -29,13 +29,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       appBar: AppBar(
         title: const Text('Détails du Produit'),
         backgroundColor: Colors.green,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.share),
-            onPressed: () => _showJsonDialog(context),
-            tooltip: 'Voir JSON',
-          ),
-        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -50,8 +43,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             _buildEcoScoreButton(context),
             const SizedBox(height: 16),
             
-            // Informations principales
-            _buildSectionTitle('Informations Principales'),
+            // Informations principales du produit
+            _buildSectionTitle('📦 Informations du Produit'),
             if (productData['name'] != null && productData['name'].toString().isNotEmpty)
               _buildInfoCard(context, 'Nom du produit', productData['name'].toString(), Icons.shopping_bag),
             
@@ -61,25 +54,43 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             if (productData['category'] != null && productData['category'].toString().isNotEmpty)
               _buildInfoCard(context, 'Catégorie', productData['category'].toString(), Icons.category),
             
+            if (productData['netWeight_g'] != null)
+              _buildInfoCard(
+                context,
+                'Poids net',
+                '${productData['netWeight_g']} g',
+                Icons.scale,
+              ),
+            
             if (productData['origin'] != null && productData['origin'].toString().isNotEmpty)
               _buildInfoCard(context, 'Origine', productData['origin'].toString(), Icons.public),
             
-            // Composition/Ingrédients
+            // Ingrédients et composition
+            if (productData['nlp_ingredients'] != null || 
+                (productData['composition'] != null && productData['composition'].toString().isNotEmpty))
+              _buildSectionTitle('🧪 Ingrédients et Composition'),
+            
+            // Ingrédients extraits par NLP (priorité)
+            if (productData['nlp_ingredients'] != null)
+              _buildNLPIngredientsCard(context, productData['nlp_ingredients']),
+            
+            // Composition complète
             if (productData['composition'] != null && productData['composition'].toString().isNotEmpty)
               _buildCompositionCard(context, productData['composition']),
             
-            // Emballage
-            if (productData['packaging'] != null)
-              _buildPackagingCard(context, productData['packaging']),
-            
             // Informations nutritionnelles
+            if (productData['nutritional_info'] != null)
+              _buildSectionTitle('🍎 Informations Nutritionnelles'),
             if (productData['nutritional_info'] != null)
               _buildNutritionCard(context, productData['nutritional_info']),
             
-            // Données brutes (JSON formaté)
-            _buildRawDataCard(context, productData),
+            // Emballage
+            if (productData['packaging'] != null)
+              _buildSectionTitle('📦 Emballage'),
+            if (productData['packaging'] != null)
+              _buildPackagingCard(context, productData['packaging']),
             
-            // Toutes les autres données
+            // Toutes les autres données importantes
             _buildAllDataCard(context, productData),
           ],
         ),
@@ -148,14 +159,27 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   Widget _buildSectionTitle(String title) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12.0),
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: Colors.green,
-        ),
+      padding: const EdgeInsets.only(top: 16.0, bottom: 12.0),
+      child: Row(
+        children: [
+          Container(
+            width: 4,
+            height: 24,
+            decoration: BoxDecoration(
+              color: Colors.green,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.green,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -167,59 +191,99 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     IconData icon,
   ) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 10),
       elevation: 2,
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: Colors.green.shade100,
-          child: Icon(icon, color: Colors.green),
-        ),
-        title: Text(
-          title,
-          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-            color: Colors.grey.shade700,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 8.0),
-          child: Text(
-            content,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              fontWeight: FontWeight.w400,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: Colors.green.shade700, size: 24),
             ),
-          ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    content,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                      color: Colors.grey.shade900,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
-        isThreeLine: true,
       ),
     );
   }
 
   Widget _buildCompositionCard(BuildContext context, dynamic composition) {
     String compositionText = composition.toString();
-    bool isLong = compositionText.length > 200;
+    bool isLong = compositionText.length > 150;
     
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: ExpansionTile(
-        leading: const CircleAvatar(
-          backgroundColor: Colors.orange,
-          child: Icon(Icons.list, color: Colors.white),
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.orange.shade50,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Icon(Icons.list, color: Colors.orange, size: 24),
         ),
         title: const Text(
-          'Composition / Ingrédients',
-          style: TextStyle(fontWeight: FontWeight.w500),
+          'Composition Complète',
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 16,
+          ),
         ),
         subtitle: isLong 
-          ? const Text('Appuyez pour voir tout', style: TextStyle(fontSize: 12))
+          ? const Text('Appuyez pour voir la composition complète', style: TextStyle(fontSize: 12))
           : null,
         children: [
-          Padding(
+          Container(
             padding: const EdgeInsets.all(16.0),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(12),
+                bottomRight: Radius.circular(12),
+              ),
+            ),
             child: SelectableText(
               compositionText,
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                height: 1.5,
+                fontSize: 14,
+              ),
             ),
           ),
         ],
@@ -231,42 +295,64 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: ExpansionTile(
-        leading: const CircleAvatar(
-          backgroundColor: Colors.blue,
-          child: Icon(Icons.inventory_2, color: Colors.white),
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.blue.shade50,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Icon(Icons.inventory_2, color: Colors.blue, size: 24),
         ),
         title: const Text(
-          'Emballage',
-          style: TextStyle(fontWeight: FontWeight.w500),
+          'Informations d\'Emballage',
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 16,
+          ),
         ),
         children: [
-          Padding(
+          Container(
             padding: const EdgeInsets.all(16.0),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(12),
+                bottomRight: Radius.circular(12),
+              ),
+            ),
             child: packaging is Map
                 ? Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: packaging.entries.map((entry) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12.0),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              flex: 2,
-                              child: Text(
-                                _formatKey(entry.key.toString()),
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.grey.shade700,
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        elevation: 0,
+                        color: Colors.white,
+                        child: Padding(
+                          padding: const EdgeInsets.all(12.0),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                flex: 2,
+                                child: Text(
+                                  _formatKey(entry.key.toString()),
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.blue.shade700,
+                                  ),
                                 ),
                               ),
-                            ),
-                            Expanded(
-                              flex: 3,
-                              child: _buildValueWidget(entry.value),
-                            ),
-                          ],
+                              Expanded(
+                                flex: 3,
+                                child: _buildValueWidget(entry.value),
+                              ),
+                            ],
+                          ),
                         ),
                       );
                     }).toList(),
@@ -285,49 +371,72 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: ExpansionTile(
-        leading: const CircleAvatar(
-          backgroundColor: Colors.purple,
-          child: Icon(Icons.restaurant, color: Colors.white),
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.purple.shade50,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Icon(Icons.restaurant, color: Colors.purple, size: 24),
         ),
         title: const Text(
-          'Informations Nutritionnelles',
-          style: TextStyle(fontWeight: FontWeight.w500),
+          'Valeurs Nutritionnelles',
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 16,
+          ),
         ),
         children: [
-          Padding(
+          Container(
             padding: const EdgeInsets.all(16.0),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(12),
+                bottomRight: Radius.circular(12),
+              ),
+            ),
             child: nutritionalInfo is Map
                 ? Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: nutritionalInfo.entries.map((entry) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              flex: 2,
-                              child: Text(
-                                _formatKey(entry.key.toString()),
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.grey.shade700,
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        elevation: 0,
+                        color: Colors.white,
+                        child: Padding(
+                          padding: const EdgeInsets.all(12.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Expanded(
+                                flex: 2,
+                                child: Text(
+                                  _formatKey(entry.key.toString()),
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.purple.shade700,
+                                  ),
                                 ),
                               ),
-                            ),
-                            Expanded(
-                              flex: 1,
-                              child: Text(
-                                entry.value.toString(),
-                                textAlign: TextAlign.end,
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  fontWeight: FontWeight.w500,
+                              Expanded(
+                                flex: 1,
+                                child: Text(
+                                  entry.value.toString(),
+                                  textAlign: TextAlign.end,
+                                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.purple.shade900,
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       );
                     }).toList(),
@@ -342,39 +451,88 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  Widget _buildRawDataCard(BuildContext context, Map<String, dynamic> productData) {
+  Widget _buildNLPIngredientsCard(BuildContext context, dynamic nlpIngredients) {
+    List<String> ingredients = [];
+    
+    if (nlpIngredients is List) {
+      ingredients = nlpIngredients.map((e) => e.toString()).toList();
+    } else if (nlpIngredients is String) {
+      ingredients = nlpIngredients.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+    }
+    
+    if (ingredients.isEmpty) return const SizedBox.shrink();
+    
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
-      color: Colors.grey.shade100,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: ExpansionTile(
-        leading: const CircleAvatar(
-          backgroundColor: Colors.grey,
-          child: Icon(Icons.code, color: Colors.white),
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.deepOrange.shade50,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Icon(Icons.science, color: Colors.deepOrange, size: 24),
         ),
         title: const Text(
-          'Données Brutes (JSON)',
-          style: TextStyle(fontWeight: FontWeight.w500),
+          'Ingrédients Identifiés',
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 16,
+          ),
         ),
-        subtitle: const Text('Format JSON structuré', style: TextStyle(fontSize: 12)),
+        subtitle: Text(
+          '${ingredients.length} ingrédient(s) détecté(s) par analyse intelligente',
+          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+        ),
         children: [
-          Padding(
+          Container(
             padding: const EdgeInsets.all(16.0),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.black87,
-                borderRadius: BorderRadius.circular(8),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(12),
+                bottomRight: Radius.circular(12),
               ),
-              child: SelectableText(
-                _formatJson(productData),
-                style: const TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 12,
-                  color: Colors.white,
-                ),
-              ),
+            ),
+            child: Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: ingredients.map((ingredient) {
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.deepOrange.shade200, width: 1.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.deepOrange.shade50,
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.check_circle, size: 16, color: Colors.deepOrange.shade700),
+                      const SizedBox(width: 6),
+                      Text(
+                        ingredient,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w500,
+                          color: Colors.deepOrange.shade900,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
             ),
           ),
         ],
@@ -384,8 +542,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   Widget _buildAllDataCard(BuildContext context, Map<String, dynamic> productData) {
     // Afficher toutes les autres clés qui n'ont pas été affichées
-    final displayedKeys = {'name', 'brand', 'category', 'composition', 'origin', 'packaging', 'nutritional_info', 'gtin', 'raw_data'};
-    final otherKeys = productData.keys.where((key) => !displayedKeys.contains(key)).toList();
+    final displayedKeys = {
+      'name', 'brand', 'category', 'composition', 'origin', 'packaging', 
+      'nutritional_info', 'gtin', 'raw_data', 'raw_text', 'netWeight_g',
+      'nlp_ingredients', 'nlp_product_name', 'nlp_weight'
+    };
+    final otherKeys = productData.keys
+        .where((key) => !displayedKeys.contains(key) && 
+                       productData[key] != null && 
+                       productData[key].toString().isNotEmpty)
+        .toList();
     
     if (otherKeys.isEmpty) return const SizedBox.shrink();
     
@@ -398,34 +564,42 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           child: Icon(Icons.info_outline, color: Colors.white),
         ),
         title: const Text(
-          'Autres Données',
+          'Informations Supplémentaires',
           style: TextStyle(fontWeight: FontWeight.w500),
         ),
-        subtitle: Text('${otherKeys.length} champ(s) supplémentaire(s)', style: const TextStyle(fontSize: 12)),
+        subtitle: Text('${otherKeys.length} information(s) supplémentaire(s)', style: const TextStyle(fontSize: 12)),
         children: [
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: otherKeys.map((key) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _formatKey(key),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey.shade600,
-                          fontWeight: FontWeight.w600,
-                        ),
+                final value = productData[key];
+                // Ne pas afficher les valeurs complexes ou vides
+                if (value == null || 
+                    (value is Map && value.isEmpty) || 
+                    (value is List && value.isEmpty)) {
+                  return const SizedBox.shrink();
+                }
+                
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  elevation: 1,
+                  child: ListTile(
+                    title: Text(
+                      _formatKey(key),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: Colors.teal.shade700,
                       ),
-                      const SizedBox(height: 4),
-                      _buildValueWidget(productData[key]),
-                    ],
+                    ),
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: 4.0),
+                      child: _buildValueWidget(value),
+                    ),
                   ),
                 );
-              }).toList(),
+              }).where((widget) => widget is! SizedBox || (widget as SizedBox).child != null).toList(),
             ),
           ),
         ],
@@ -484,36 +658,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     }
   }
 
-  void _showJsonDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Données JSON Complètes'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: SingleChildScrollView(
-            child: SelectableText(
-              _formatJson(widget.product.productData),
-              style: const TextStyle(fontFamily: 'monospace', fontSize: 11),
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Fermer'),
-          ),
-          TextButton(
-            onPressed: () {
-              // Copier dans le presse-papier (nécessite package clipboard)
-              Navigator.pop(context);
-            },
-            child: const Text('Copier'),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildEcoScoreButton(BuildContext context) {
     return Card(
