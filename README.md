@@ -1,169 +1,324 @@
-# EcoLabel-MS 🌱
+<h1 align="center">🌱 EcoLabel-MS</h1>
 
-Système de microservices pour l'analyse et le scoring écologique de produits alimentaires.
+<p align="center">
+  <strong>Système de Microservices pour l'Analyse et le Scoring Écologique de Produits Alimentaires</strong><br>
+  <em>Application Mobile Flutter avec Backend Microservices</em>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.9+-blue?logo=python&logoColor=white" alt="Python"/>
+  <img src="https://img.shields.io/badge/Flutter-3.9+-02569B?logo=flutter&logoColor=white" alt="Flutter"/>
+  <img src="https://img.shields.io/badge/FastAPI-0.100+-009688?logo=fastapi&logoColor=white" alt="FastAPI"/>
+  <img src="https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white" alt="Docker"/>
+  <img src="https://img.shields.io/badge/NLP-BERT-yellow?logo=huggingface&logoColor=white" alt="BERT"/>
+</p>
+
+<p align="center">
+  <a href="#-à-propos">À propos</a> •
+  <a href="#-fonctionnalités">Fonctionnalités</a> •
+  <a href="#-architecture">Architecture</a> •
+  <a href="#-installation">Installation</a> •
+  <a href="#-utilisation">Utilisation</a> •
+  <a href="#-api">API</a> •
+  <a href="#-équipe">Équipe</a>
+</p>
+
+---
+
+## 📋 À propos
+
+**EcoLabel-MS** est un système intelligent d'analyse et de scoring écologique pour produits alimentaires. Il permet d'évaluer l'impact environnemental des produits (empreinte carbone, consommation d'eau et d'énergie) grâce à l'analyse d'images, l'OCR, le traitement du langage naturel (NLP) avec BERT, et des bases de données LCA (Life Cycle Assessment) basées sur Agribalyse.
+
+### 🎯 Objectifs
+
+- ✅ Analyser les produits alimentaires via code-barres ou images
+- ✅ Extraire automatiquement les ingrédients avec NLP/BERT
+- ✅ Calculer l'impact environnemental (CO₂, eau, énergie)
+- ✅ Fournir un score écologique global pour chaque produit
+- ✅ Interface mobile intuitive et moderne
+
+---
 
 ## 📹 Démonstration
+
 https://github.com/user-attachments/assets/6f895f15-c030-46ab-bd9c-8dceeb78196e
 
-## 📋 Description
+---
 
-EcoLabel-MS est une application mobile Flutter connectée à un système de microservices backend qui permet d'analyser les produits alimentaires et de calculer leur impact environnemental (score écologique). Le système utilise l'OCR, le traitement du langage naturel (NLP) avec BERT, et des bases de données LCA (Life Cycle Assessment) pour évaluer l'empreinte carbone, la consommation d'eau et d'énergie des produits.
+## ✨ Fonctionnalités
+
+| Module | Description | Technologie |
+|--------|-------------|-------------|
+| 📱 **Application Mobile** | Interface Flutter pour scan et analyse | Flutter / Dart |
+| 🔍 **Parser Produit** | Parsing de produits (code-barres, OCR, scraping) | Python / FastAPI |
+| 🤖 **NLP Ingredients** | Extraction d'ingrédients via BERT fine-tuné | Python / Transformers |
+| 🌍 **LCA Lite** | Calcul d'impact environnemental (CO₂, eau, énergie) | Python / FastAPI |
+| 📊 **Scoring** | Calcul de score écologique global | Python / FastAPI |
+| 🚪 **API Gateway** | Routage et orchestration des microservices | Python / FastAPI |
+| 🔄 **Service Discovery** | Découverte de services avec Consul | Consul |
+
+---
 
 ## 🏗️ Architecture
 
-Le projet est organisé en microservices avec service discovery via Consul :
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                   APPLICATION MOBILE (Flutter)                   │
+│                        iOS / Android                             │
+└─────────────────────────────┬───────────────────────────────────┘
+                              │ HTTP/REST
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      API GATEWAY (FastAPI)                       │
+│                          Port: 8080                              │
+└──────┬──────────┬──────────┬──────────┬──────────┬──────────────┘
+       │          │          │          │          │
+       ▼          ▼          ▼          ▼          ▼
+┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐
+│ Parser   │ │   NLP    │ │   LCA    │ │ Scoring  │ │ Consul   │
+│ Produit  │ │Ingredients│ │  Lite    │ │ Service  │ │ Discovery│
+│  :8001   │ │  :8002   │ │  :8003   │ │  :8004   │ │  :8500   │
+└────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘ └──────────┘
+     │            │            │            │
+     └────────────┴────────────┼────────────┘
+                               │
+       ┌───────────────────────┼───────────────────────┐
+       ▼                       ▼                       ▼
+┌──────────────┐       ┌──────────────┐       ┌──────────────┐
+│  PostgreSQL  │       │   BERT NER   │       │  Agribalyse  │
+│    :5432     │       │    Model     │       │   Database   │
+└──────────────┘       └──────────────┘       └──────────────┘
+```
 
-- **Gateway** : API Gateway FastAPI qui route les requêtes vers les différents microservices
-- **ParserProduit** : Service de parsing de produits (code-barres, OCR, scraping)
-- **NLPIngredients** : Service NLP pour l'extraction d'ingrédients avec un modèle BERT fine-tuné
-- **LCALite** : Service de calcul d'impact environnemental basé sur la base de données Agribalyse
-- **Scoring** : Service de calcul de score écologique global
-- **ecolabel_ms_flutter** : Application mobile Flutter
+### 📦 Microservices
+
+| Service | Port | Langage | Framework | Description |
+|---------|------|---------|-----------|-------------|
+| API Gateway | 8080 | Python | FastAPI | Routage et orchestration |
+| Parser Produit | 8001 | Python | FastAPI | Scan code-barres, OCR, scraping |
+| NLP Ingredients | 8002 | Python | FastAPI + Transformers | Extraction d'ingrédients (BERT) |
+| LCA Lite | 8003 | Python | FastAPI | Calcul impact environnemental |
+| Scoring | 8004 | Python | FastAPI | Calcul score écologique |
+| Consul | 8500 | - | Consul | Service discovery |
+| PostgreSQL | 5432 | SQL | PostgreSQL | Base de données |
+
+---
 
 ## 🚀 Installation
 
 ### Prérequis
 
-- Docker et Docker Compose
-- Python 3.9+
-- Flutter SDK (pour l'application mobile)
-- PostgreSQL (géré via Docker)
+- **Docker** 20+ et Docker Compose 2+
+- **Python** 3.9+ (pour développement local)
+- **Flutter SDK** 3.9+ (pour l'application mobile)
+- **8 GB RAM** minimum (16 GB recommandé pour le modèle BERT)
 
-### Démarrage avec Docker Compose
+### Étapes d'installation
 
+1. **Cloner le dépôt**
 ```bash
-# Démarrer tous les services
-docker-compose up -d
+git clone https://github.com/votre-username/EcoLabel-MS.git
+cd EcoLabel-MS
+```
 
-# Vérifier les services
+2. **Lancer les services avec Docker Compose**
+```bash
+docker-compose up -d
+```
+
+3. **Vérifier les services**
+```bash
 docker-compose ps
 ```
 
-Les services seront disponibles sur :
-- **Gateway** : http://localhost:8080
-- **Consul UI** : http://localhost:8500
-- **PostgreSQL** : localhost:5432
-
-### Installation manuelle
-
-#### Backend Services
-
-```bash
-# Installer les dépendances Python
-pip install -r requirements.txt
-
-# Pour chaque service
-cd Gateway && pip install -r requirements.txt
-cd ../NLPIngredients && pip install -r requirements.txt
-cd ../ParserProduit && pip install -r requirements.txt
-cd ../LCALite && pip install -r requirements.txt
-cd ../Scoring && pip install -r requirements.txt
-```
-
-#### Application Flutter
-
+4. **Installer l'application Flutter** (optionnel, pour développement)
 ```bash
 cd ecolabel_ms_flutter
-
-# Installer les dépendances
 flutter pub get
-
-# Lancer l'application
 flutter run
 ```
+
+### Accès aux services
+
+- 🌐 **API Gateway** : http://localhost:8080
+- 🗄️ **Consul UI** : http://localhost:8500
+- 📊 **PostgreSQL** : localhost:5432
+
+---
+
+## 💻 Utilisation
+
+### Application Mobile
+
+1. **Scanner un code-barres** : Utilisez l'appareil photo pour scanner le code-barres d'un produit
+2. **Prendre une photo** : Photographiez l'emballage du produit pour analyse OCR
+3. **Analyser** : L'application extrait les ingrédients et calcule l'impact environnemental
+4. **Visualiser le score** : Consultez le score écologique et les détails (CO₂, eau, énergie)
+
+### Exemple de Workflow
+
+```
+1. Scan code-barres → Parser Produit
+2. Extraction texte (OCR) → NLP Ingredients
+3. Identification ingrédients → LCA Lite
+4. Calcul impact → Scoring
+5. Affichage résultat → Application Mobile
+```
+
+---
+
+## 📡 API
+
+### Endpoints principaux
+
+| Méthode | Endpoint | Description |
+|---------|----------|-------------|
+| `POST` | `/PARSER-PRODUIT/product/parse` | Parser un produit (code-barres) |
+| `POST` | `/PARSER-PRODUIT/product/parse-from-image` | Parser un produit depuis une image |
+| `POST` | `/NLP-INGREDIENTS/extract` | Extraire les ingrédients (NLP) |
+| `GET` | `/LCA-LITE/factors/{ingredient}` | Obtenir les facteurs LCA d'un ingrédient |
+| `POST` | `/SCORING/calculate` | Calculer le score écologique |
+| `GET` | `/health` | Health check |
+
+### Exemple d'appel API
+
+```bash
+# Parser un produit
+curl -X POST http://localhost:8080/PARSER-PRODUIT/product/parse \
+  -H "Content-Type: application/json" \
+  -d '{"barcode": "3560070952934"}'
+
+# Extraire les ingrédients
+curl -X POST http://localhost:8080/NLP-INGREDIENTS/extract \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Eau, sucre, acidifiant: acide citrique"}'
+```
+
+---
 
 ## 📁 Structure du Projet
 
 ```
 EcoLabel-MS/
-├── Gateway/              # API Gateway
-├── NLPIngredients/       # Service NLP avec BERT
-├── ParserProduit/        # Service de parsing produits
-├── LCALite/             # Service LCA et impact environnemental
-├── Scoring/             # Service de scoring
-├── ecolabel_ms_flutter/ # Application mobile Flutter
-├── Consul/              # Configuration Consul
-├── docs/                # Documentation et vidéos
-└── docker-compose.yml   # Configuration Docker Compose
+├── 📂 Gateway/                    # API Gateway (Python/FastAPI)
+├── 📂 ParserProduit/              # Service de parsing (Python/FastAPI)
+├── 📂 NLPIngredients/             # Service NLP (Python/FastAPI + BERT)
+├── 📂 LCALite/                    # Service LCA (Python/FastAPI)
+├── 📂 Scoring/                    # Service de scoring (Python/FastAPI)
+├── 📂 ecolabel_ms_flutter/        # Application mobile (Flutter)
+│   ├── 📂 lib/
+│   │   ├── 📂 screens/            # Écrans de l'application
+│   │   ├── 📂 services/           # Services API
+│   │   ├── 📂 models/             # Modèles de données
+│   │   └── 📂 widgets/            # Widgets réutilisables
+│   └── 📄 pubspec.yaml            # Dépendances Flutter
+├── 📂 Consul/                     # Configuration Consul
+├── 📂 docs/                       # Documentation et vidéos
+├── 📄 docker-compose.yml          # Orchestration Docker
+└── 📄 README.md                   # Documentation
 ```
+
+---
 
 ## 🔧 Configuration
 
 ### Variables d'environnement
 
-Chaque service nécessite une configuration de base de données :
-
-```bash
-DATABASE_URL=postgresql://ecolabel_user:ecolabel_pass@postgres:5432/ecolabel
-```
+| Variable | Description | Défaut |
+|----------|-------------|--------|
+| `DATABASE_URL` | URL de connexion PostgreSQL | `postgresql://ecolabel_user:ecolabel_pass@postgres:5432/ecolabel` |
+| `CONSUL_URL` | URL du serveur Consul | `http://localhost:8500` |
 
 ### Configuration de l'application Flutter
 
-Modifiez `ecolabel_ms_flutter/lib/services/api_service.dart` pour définir l'URL du backend :
+Modifiez `ecolabel_ms_flutter/lib/services/api_service.dart` :
 
 ```dart
 static const String baseUrl = 'http://VOTRE_IP:8080';
 ```
 
-## 📱 Fonctionnalités
-
-- **Scan de code-barres** : Identification rapide des produits
-- **OCR sur images** : Extraction d'informations depuis les photos de produits
-- **Extraction d'ingrédients** : Détection automatique avec NLP/BERT
-- **Analyse LCA** : Calcul d'impact environnemental (CO₂, eau, énergie)
-- **Scoring écologique** : Note globale du produit
+---
 
 ## 🛠️ Technologies Utilisées
 
 ### Backend
-- **FastAPI** : Framework web Python
+- **FastAPI** : Framework web Python moderne et performant
 - **PostgreSQL** : Base de données relationnelle
-- **Consul** : Service discovery et configuration
-- **Transformers (Hugging Face)** : Modèles NLP BERT
+- **Consul** : Service discovery et configuration distribuée
+- **Transformers (Hugging Face)** : Bibliothèque NLP pour BERT
 - **SQLAlchemy** : ORM Python
+- **Pytesseract** : OCR pour extraction de texte
+- **BeautifulSoup** : Parsing HTML pour scraping
 
 ### Frontend
 - **Flutter** : Framework mobile multiplateforme
 - **mobile_scanner** : Scan de code-barres
 - **image_picker** : Sélection d'images
+- **http** : Client HTTP pour les appels API
 
 ### Infrastructure
-- **Docker** : Containerisation
+- **Docker** : Containerisation des services
 - **Docker Compose** : Orchestration de services
+- **Consul** : Service discovery
+
+### Données
+- **Agribalyse** : Base de données LCA pour l'impact environnemental
+- **BERT MS2** : Modèle NLP fine-tuné pour extraction d'ingrédients
+
+---
 
 ## 📊 Base de Données
 
-La base de données utilise les données Agribalyse pour les calculs LCA. Les tables principales incluent :
+La base de données utilise les données **Agribalyse** pour les calculs LCA. Les tables principales incluent :
 
-- Facteurs LCA (CO₂, eau, énergie)
-- Ingredents canoniques
-- Extractions NLP
-- Produits parsés
+- **Facteurs LCA** : CO₂, eau, énergie par ingrédient
+- **Ingrédients canoniques** : Mapping des ingrédients
+- **Extractions NLP** : Historique des extractions d'ingrédients
+- **Produits parsés** : Informations sur les produits analysés
+- **Scores** : Historique des scores écologiques
 
-## 🔍 API Endpoints
+---
 
-### Gateway (Port 8080)
+## 🛡️ Sécurité
 
-- `GET /health` - Health check
-- `POST /PARSER-PRODUIT/product/parse` - Parser un produit
-- `POST /NLP-INGREDIENTS/extract` - Extraire les ingrédients
-- `GET /LCA-LITE/factors/{ingredient}` - Obtenir les facteurs LCA
-- `POST /SCORING/calculate` - Calculer le score écologique
+- ✅ **Validation des entrées** : Vérification des données utilisateur
+- ✅ **Isolation des services** : Conteneurisation Docker
+- ✅ **Service discovery sécurisé** : Consul pour la gestion des services
+- ✅ **Gestion des erreurs** : Gestion robuste des exceptions
 
-## 🤝 Contribution
+---
 
+## 👥 Équipe
+
+<table>
+  <tr>
+    <td align="center"><strong>Abdelillah Boulgh</strong></td>
+    <td align="center"><strong>Ahmed Elhamri</strong></td>
+    <td align="center"><strong>Fatimazohra Lamzoghi</strong></td>
+    <td align="center"><strong>Ouarda Azizi</strong></td>
+  </tr>
+</table>
+
+**École Marocaine des Sciences de l'Ingénieur (EMSI)**  
+📆 Année académique 2024-2025
+
+---
 
 ## 📝 Licence
 
-Ce projet est sous licence MIT.
+Ce projet est développé dans un cadre académique. Tous droits réservés.
 
-## 👥 Auteurs
-
-Équipe EcoLabel-MS
+---
 
 ## 🙏 Remerciements
 
-- Agribalyse pour les données LCA
-- Hugging Face pour les modèles Transformers
-- La communauté Flutter
+- **Agribalyse** pour les données LCA
+- **Hugging Face** pour les modèles Transformers
+- **La communauté Flutter** pour le support et les ressources
+- **Open Food Facts** pour les données produits
 
+---
+
+<p align="center">
+  <sub>Développé avec ❤️ par l'équipe EcoLabel-MS</sub>
+</p>
