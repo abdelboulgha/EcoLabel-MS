@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+
+# Database
+sqlalchemy
+psycopg2-binary
+
+# Data & validation
+pydantic
+
+# CSV / utils (stdlib but kept explicit for clarity)
+python-dotenv
+
+# HTTP & networking
+requests

@@ -10,7 +10,7 @@ class OCRService:
     
     def __init__(self):
         # Configurer le chemin Tesseract si nécessaire
-        # pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+        # pytesseract.pytesseract.tesseract_cmd = r'Tesseract-OCR/tesseract.exe'
         pass
     
     def extract_text_from_image(self, image_base64: str) -> Optional[str]:

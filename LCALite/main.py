@@ -23,7 +23,25 @@ CSV_PATH = Path("Csv files/lca_factors_import_unique.csv")
 def load_lca_factors_if_empty():
     conn = get_factor_db()
     cursor = conn.cursor()
-
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS lca_factors
+                   (
+                       ingredient_id
+                       TEXT
+                       PRIMARY
+                       KEY,
+                       co2_per_kg
+                       DOUBLE
+                       PRECISION,
+                       water_L_per_kg
+                       DOUBLE
+                       PRECISION,
+                       energy_MJ_per_kg
+                       DOUBLE
+                       PRECISION
+                   )
+                   """)
+    conn.commit()
     cursor.execute("SELECT COUNT(*) FROM lca_factors")
     count = cursor.fetchone()[0]
 
@@ -95,15 +113,15 @@ def get_factor_db():
         password="lca_pass"
     )
 
-CONSUL_URL = "http://localhost:8500/v1/agent/service/register"
+CONSUL_URL = "http://consul:8500/v1/agent/service/register"
 
-def register_service(name: str, port: int):
+def register_service(name: str, service_name: str, port: int):
     payload = {
         "Name": name,
         "Address": socket.gethostbyname(socket.gethostname()),
         "Port": port,
         "Check": {
-            "HTTP": f"http://localhost:{port}/health",
+            "HTTP": f"http://{service_name}:{port}/health",
             "Interval": "10s"
         }
     }
@@ -111,7 +129,7 @@ def register_service(name: str, port: int):
 
 @app.on_event("startup")
 def startup():
-    register_service("LCA-LITE", 8003)
+    register_service("LCA-LITE", "lca-lite", 8003)
     load_lca_factors_if_empty()
 
 @app.post("/lca/calc")

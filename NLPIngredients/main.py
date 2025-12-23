@@ -23,15 +23,15 @@ tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
 model = AutoModelForTokenClassification.from_pretrained(MODEL_PATH)
 id2label = model.config.id2label
 
-CONSUL_URL = "http://localhost:8500/v1/agent/service/register"
+CONSUL_URL = "http://consul:8500/v1/agent/service/register"
 
-def register_service(name: str, port: int):
+def register_service(name: str, service_name: str, port: int):
     payload = {
         "Name": name,
         "Address": socket.gethostbyname(socket.gethostname()),
         "Port": port,
         "Check": {
-            "HTTP": f"http://localhost:{port}/health",
+            "HTTP": f"http://{service_name}:{port}/health",
             "Interval": "10s"
         }
     }
@@ -45,7 +45,7 @@ class NLPInput(BaseModel):
 
 @app.on_event("startup")
 def startup():
-    register_service("NLP-INGREDIENTS", 8002)
+    register_service("NLP-INGREDIENTS", "nlp-ingredients", 8002)
 @app.get("/debug/model")
 def debug_model():
     return {

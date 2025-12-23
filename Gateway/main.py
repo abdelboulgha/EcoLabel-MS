@@ -8,13 +8,13 @@ import requests
 app = FastAPI(title="EcoLabel API Gateway")
 CONSUL_URL = "http://consul:8500/v1/agent/service/register"
 
-def register_service(name: str, port: int):
+def register_service(name: str, service_name: str, port: int):
     payload = {
         "Name": name,
         "Address": socket.gethostbyname(socket.gethostname()),
         "Port": port,
         "Check": {
-            "HTTP": f"http://localhost:{port}/health",
+            "HTTP": f"http://{service_name}:{port}/health",
             "Interval": "10s"
         }
     }
@@ -22,7 +22,7 @@ def register_service(name: str, port: int):
 
 @app.on_event("startup")
 def startup():
-    register_service("GATEWAY", 8080)
+    register_service("GATEWAY", "gateway", 8080)
 
 # -------- ROUTES -------- #
 

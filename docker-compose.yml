@@ -1,54 +1,135 @@
 version: "3.8"
 
 services:
-
   consul:
     image: consul:1.15
     command: agent -dev -client=0.0.0.0
     ports:
       - "8500:8500"
+    networks:
+      - ecolabel-network
 
-  postgres:
+#     ---------- PARSER DB ----------
+  postgres-parser:
     image: postgres:15
     environment:
-      POSTGRES_DB: ecolabel
-      POSTGRES_USER: ecolabel_user
-      POSTGRES_PASSWORD: ecolabel_pass
+      POSTGRES_DB: parser_db
+      POSTGRES_USER: parser_user
+      POSTGRES_PASSWORD: parser_pass
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - parser_data:/var/lib/postgresql/data
+    networks:
+      - ecolabel-network
+
+  # ---------- NLP DB ----------
+  postgres-nlp:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: nlp_ingredient
+      POSTGRES_USER: nlp_user
+      POSTGRES_PASSWORD: nlp_pass
+    volumes:
+      - nlp_data:/var/lib/postgresql/data
+    networks:
+      - ecolabel-network
+
+  # ---------- LCA DB ----------
+  postgres-lca:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: lca_lite
+      POSTGRES_USER: lca_user
+      POSTGRES_PASSWORD: lca_pass
+    volumes:
+      - lca_data:/var/lib/postgresql/data
+    networks:
+      - ecolabel-network
+
+  # ---------- SCORING DB ----------
+  postgres-scoring:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: scoring_db
+      POSTGRES_USER: scoring_user
+      POSTGRES_PASSWORD: scoring_pass
+    volumes:
+      - scoring_data:/var/lib/postgresql/data
+    networks:
+      - ecolabel-network
 
   gateway:
-    build: Gateway
+    build: ./Gateway
     ports:
       - "8080:8080"
     depends_on:
       - consul
+    networks:
+      - ecolabel-network
 
-  nlp:
-    build: NLPIngredients
+  parser-produit:
+    build: ./ParserProduit
+    ports:
+      - "8001:8001"   # host:container
     environment:
-      - DATABASE_URL=postgresql://ecolabel_user:ecolabel_pass@postgres:5432/ecolabel
+      DATABASE_URL: postgresql://parser_user:parser_pass@postgres-parser:5432/parser_db
+      CONSUL_URL: http://consul:8500/v1/agent/service/register
     depends_on:
       - consul
-      - postgres
-    volumes:
-      - ./bert_ms2_ner_model:/models/bert
+      - postgres-parser
+    networks:
+      - ecolabel-network
 
-#  lca:
-#    build: LCALite
-#    environment:
-#      - DATABASE_URL=postgresql://ecolabel_user:ecolabel_pass@postgres:5432/ecolabel
-#    depends_on:
-#      - consul
-#      - postgres
-#
-#  scoring:
-#    build: Scoring
-#    environment:
-#      - DATABASE_URL=postgresql://ecolabel_user:ecolabel_pass@postgres:5432/ecolabel
-#    depends_on:
-#      - consul
-#      - postgres
+  nlp-ingredients:
+    build: ./NLPIngredients
+    ports:
+      - "8002:8002"
+    environment:
+      MODEL_PATH: /models/bert
+      DATABASE_URL: postgresql://nlp_user:nlp_pass@postgres-nlp:5432/nlp_db
+      CONSUL_URL: http://consul:8500/v1/agent/service/register
+    volumes:
+      - ./models/bert_ms2_ner_model:/models/bert:ro
+    depends_on:
+      - consul
+      - postgres-nlp
+    networks:
+      - ecolabel-network
+
+  lca-lite:
+    build: ./LCALite
+    ports:
+      - "8003:8003"   # host:container
+    environment:
+      DATABASE_URL: postgresql://lca_user:lca_pass@postgres-lca:5432/lca_db
+      CONSUL_URL: http://consul:8500/v1/agent/service/register
+    volumes:
+      - ./Csv files:/app/Csv files
+    depends_on:
+      - consul
+      - postgres-lca
+    networks:
+      - ecolabel-network
+
+  scoring:
+    build: ./Scoring
+    ports:
+      - "8004:8004"
+    depends_on:
+      - consul
+      - postgres-scoring
+    environment:
+      - DATABASE_URL=postgresql://scoring_user:scoring_pass@postgres-scoring:5432/scoring_db
+    networks:
+      - ecolabel-network
+
+
+
+networks:
+  ecolabel-network:
+    driver: bridge
 
 volumes:
-  postgres_data:
+  parser_data:
+  nlp_data:
+  lca_data:
+  scoring_data:

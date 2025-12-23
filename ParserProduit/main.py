@@ -23,15 +23,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-CONSUL_URL = "http://localhost:8500/v1/agent/service/register"
+CONSUL_URL = "http://consul:8500/v1/agent/service/register"
 
-def register_service(name: str, port: int):
+def register_service(name: str, service_name: str, port: int):
     payload = {
         "Name": name,
         "Address": socket.gethostbyname(socket.gethostname()),
         "Port": port,
         "Check": {
-            "HTTP": f"http://localhost:{port}/health",
+            "HTTP": f"http://{service_name}:{port}/health",
             "Interval": "10s"
         }
     }
@@ -39,7 +39,7 @@ def register_service(name: str, port: int):
 # Inclure les routes
 @app.on_event("startup")
 def startup():
-    register_service("PARSER-PRODUIT", 8001)
+    register_service("PARSER-PRODUIT", "parser-produit", 8001)
 
 app.include_router(product.router, prefix="/product", tags=["product"])
 @app.get("/")

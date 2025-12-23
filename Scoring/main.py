@@ -117,15 +117,15 @@ def build_explanations(impacts: TotalImpacts, co2_score: float, water_score: flo
         "global_explanation": global_exp
     }
 
-CONSUL_URL = "http://localhost:8500/v1/agent/service/register"
+CONSUL_URL = "http://consul:8500/v1/agent/service/register"
 
-def register_service(name: str, port: int):
+def register_service(name: str, service_name: str, port: int):
     payload = {
         "Name": name,
         "Address": socket.gethostbyname(socket.gethostname()),
         "Port": port,
         "Check": {
-            "HTTP": f"http://localhost:{port}/health",
+            "HTTP": f"http://{service_name}:{port}/health",
             "Interval": "10s"
         }
     }
@@ -135,7 +135,7 @@ app = FastAPI(title="EcoLabel-MS4 – Service de Scoring")
 
 @app.on_event("startup")
 def startup():
-    register_service("SCORING", 8004)
+    register_service("SCORING", "scoring", 8004)
 
 
 @app.post("/score/compute", response_model=EcoScoreResponse)

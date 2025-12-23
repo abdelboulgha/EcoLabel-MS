@@ -1,6 +1,6 @@
 import requests
 
-CONSUL_BASE = "http://localhost:8500/v1/catalog/service"
+CONSUL_BASE = "http://consul:8500/v1/catalog/service"
 
 def discover(service_name: str) -> str:
     response = requests.get(f"{CONSUL_BASE}/{service_name}", timeout=3)
