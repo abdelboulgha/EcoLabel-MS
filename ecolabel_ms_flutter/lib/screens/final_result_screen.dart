@@ -213,7 +213,7 @@ class FinalResultScreen extends StatelessWidget {
           _buildImpactCard(
             context,
             'Émissions CO₂',
-            '${ecoScore.totalImpacts.co2G.toStringAsFixed(1)} g',
+            '${_formatImpactValue(ecoScore.totalImpacts.co2G)} g',
             Icons.cloud,
             Colors.orange,
             ecoScore.totalImpacts.co2G,
@@ -224,7 +224,7 @@ class FinalResultScreen extends StatelessWidget {
           _buildImpactCard(
             context,
             'Consommation d\'Eau',
-            '${ecoScore.totalImpacts.waterL.toStringAsFixed(1)} L',
+            '${_formatImpactValue(ecoScore.totalImpacts.waterL)} L',
             Icons.water_drop,
             Colors.blue,
             ecoScore.totalImpacts.waterL,
@@ -235,7 +235,7 @@ class FinalResultScreen extends StatelessWidget {
           _buildImpactCard(
             context,
             'Consommation d\'Énergie',
-            '${ecoScore.totalImpacts.energyMJ.toStringAsFixed(1)} MJ',
+            '${_formatImpactValue(ecoScore.totalImpacts.energyMJ)} MJ',
             Icons.bolt,
             Colors.amber,
             ecoScore.totalImpacts.energyMJ,
@@ -555,6 +555,24 @@ class FinalResultScreen extends StatelessWidget {
     if (confidence >= 0.6) return 'Fiable';
     if (confidence >= 0.4) return 'Modéré';
     return 'Faible';
+  }
+
+  // Formate les valeurs d'impact avec le bon nombre de décimales
+  // Pour les petites valeurs (< 1), on utilise 3 décimales pour la précision
+  // Pour les valeurs >= 1, on utilise 1 décimale
+  String _formatImpactValue(double value) {
+    if (value == 0.0) {
+      return '0.0';
+    } else if (value < 1.0) {
+      // Pour les petites valeurs, utiliser 3 décimales (ex: 0.038)
+      return value.toStringAsFixed(3);
+    } else if (value < 100.0) {
+      // Pour les valeurs moyennes, utiliser 1 décimale (ex: 22.0)
+      return value.toStringAsFixed(1);
+    } else {
+      // Pour les grandes valeurs, utiliser 0 décimales (ex: 500)
+      return value.toStringAsFixed(0);
+    }
   }
 
   void _showShareDialog(BuildContext context) {

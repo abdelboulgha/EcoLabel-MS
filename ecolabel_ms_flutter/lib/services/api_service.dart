@@ -4,14 +4,15 @@ import '../models/product.dart';
 
 class ApiService {
   // Utilisez votre IP Wi-Fi
-  static const String baseUrl = 'http://10.136.126.102:8080';
+  static const String baseUrl = 'http://192.168.11.229:8080';
   Future<ProductParseResponse> parseProduct({
     required String barcode,
     String? imageBase64,
   }) async {
     try {
       final url = Uri.parse('$baseUrl/PARSER-PRODUIT/product/parse');
-      print('🔗 Requête vers: $url'); // Debug
+      print('🔗 Requête vers: $url');
+      print('📤 Body: ${jsonEncode({'barcode': barcode})}');
       
       final response = await http.post(
         url,
@@ -20,19 +21,30 @@ class ApiService {
           'barcode': barcode,
           if (imageBase64 != null) 'image_base64': imageBase64,
         }),
+      ).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          print('⏱️ Timeout après 30 secondes');
+          throw Exception('Timeout: La requête a pris plus de 30 secondes');
+        },
       );
       
-      print('📡 Status Code: ${response.statusCode}'); // Debug
-      print('📦 Response Body: ${response.body}'); // Debug
+      print('📡 Status Code: ${response.statusCode}');
+      print('📦 Response Body (premiers 500 chars): ${response.body.length > 500 ? response.body.substring(0, 500) + "..." : response.body}');
       
       if (response.statusCode == 200) {
-        return ProductParseResponse.fromJson(jsonDecode(response.body));
+        print('✅ Parsing de la réponse...');
+        final parsed = ProductParseResponse.fromJson(jsonDecode(response.body));
+        print('✅ Réponse parsée avec succès');
+        return parsed;
       } else {
+        print('❌ Erreur HTTP ${response.statusCode}');
         throw Exception('Erreur HTTP ${response.statusCode}: ${response.body}');
       }
-    } catch (e) {
-      print('❌ Erreur: $e'); // Debug
-      throw Exception('Erreur réseau: $e');
+    } catch (e, stackTrace) {
+      print('❌ Erreur complète: $e');
+      print('📚 Stack trace: $stackTrace');
+      rethrow;
     }
   }
 
@@ -70,13 +82,75 @@ class ApiService {
     }
   }
 
-  // Méthode pour extraire les ingrédients avec NLP
-  Future<Map<String, dynamic>> extractNLP({
+  // Méthode pour extraire les ingrédients avec NLP et obtenir le score complet
+  Future<EcoScoreResponse> extractNLPWithScore({
     required String text,
   }) async {
     try {
       final url = Uri.parse('$baseUrl/NLP-INGREDIENTS/nlp/extract');
       print('🔗 Requête NLP vers: $url');
+      print('📝 Texte envoyé: $text');
+      
+      final requestBody = {
+        'text': text,
+      };
+      print('📤 Body JSON: ${jsonEncode(requestBody)}');
+      
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode(requestBody),
+      ).timeout(
+        const Duration(seconds: 60),
+        onTimeout: () {
+          print('⏱️ Timeout NLP après 60 secondes');
+          throw Exception('Timeout: La requête NLP a pris plus de 60 secondes');
+        },
+      );
+      
+      print('📡 Status Code: ${response.statusCode}');
+      print('📦 Response Headers: ${response.headers}');
+      print('📦 Response Body (raw): ${response.body}');
+      
+      if (response.statusCode == 200) {
+        try {
+          final jsonResponse = jsonDecode(response.body) as Map<String, dynamic>;
+          print('✅ JSON décodé avec succès');
+          print('📊 Score ID: ${jsonResponse['score_id']}');
+          print('📊 Product Name: ${jsonResponse['product_name']}');
+          print('📊 Eco Score: ${jsonResponse['eco_score_numeric']} (${jsonResponse['eco_score_letter']})');
+          
+          return EcoScoreResponse.fromJson(jsonResponse);
+        } catch (parseError) {
+          print('❌ Erreur de parsing JSON: $parseError');
+          print('❌ Response body était: ${response.body}');
+          throw Exception('Erreur de parsing de la réponse: $parseError. Réponse: ${response.body}');
+        }
+      } else {
+        final errorMessage = 'Erreur HTTP ${response.statusCode}: ${response.body}';
+        print('❌ $errorMessage');
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      print('❌ Erreur NLP complète: $e');
+      print('❌ Type d\'erreur: ${e.runtimeType}');
+      if (e is Exception) {
+        rethrow;
+      }
+      throw Exception('Erreur réseau NLP: $e');
+    }
+  }
+
+  // Méthode pour extraire uniquement les ingrédients (sans score)
+  Future<Map<String, dynamic>> extractNLP({
+    required String text,
+  }) async {
+    try {
+      final url = Uri.parse('$baseUrl/NLP-INGREDIENTS/extract');
+      print('🔗 Requête NLP extraction simple vers: $url');
       print('📝 Texte envoyé: $text');
       
       final response = await http.post(

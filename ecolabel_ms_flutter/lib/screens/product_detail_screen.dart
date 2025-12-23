@@ -731,8 +731,65 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     try {
       final productData = widget.product.productData;
       
-      // Préparer les données MS3 pour le scoring
-      // On essaie d'extraire les données depuis productData ou on utilise des valeurs par défaut
+      // Vérifier si on a déjà un score calculé par NLP
+      print('🔍 Vérification de eco_score dans productData...');
+      print('🔍 productData keys: ${productData.keys.toList()}');
+      print('🔍 eco_score existe? ${productData['eco_score'] != null}');
+      
+      if (productData['eco_score'] != null) {
+        print('✅ Utilisation du score déjà calculé par NLP');
+        final ecoScoreData = productData['eco_score'] as Map<String, dynamic>;
+        print('📊 Données eco_score: $ecoScoreData');
+        
+        // Créer un EcoScoreResponse à partir des données stockées
+        final ecoScore = EcoScoreResponse(
+          scoreId: ecoScoreData['score_id'] ?? 0,
+          productName: ecoScoreData['product_name'] ?? '',
+          ecoScoreNumeric: (ecoScoreData['eco_score_numeric'] ?? 0.0).toDouble(),
+          ecoScoreLetter: ecoScoreData['eco_score_letter'] ?? 'E',
+          confidence: (ecoScoreData['confidence'] ?? 0.0).toDouble(),
+          impactsScores: Map<String, double>.from(
+            (ecoScoreData['impacts_scores'] ?? {}).map(
+              (key, value) => MapEntry(key, (value ?? 0.0).toDouble()),
+            ),
+          ),
+          totalImpacts: TotalImpacts.fromJson(ecoScoreData['total_impacts'] ?? {}),
+          explanations: Map<String, String>.from(ecoScoreData['explanations'] ?? {}),
+        );
+        
+        print('✅ EcoScore créé: Score=${ecoScore.ecoScoreNumeric}, Letter=${ecoScore.ecoScoreLetter}, Confidence=${ecoScore.confidence}');
+        
+        if (mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => FinalResultScreen(
+                ecoScore: ecoScore,
+                productInfo: widget.product,
+              ),
+            ),
+          );
+        }
+        return;
+      }
+      
+      // Si pas de score pré-calculé, on doit recalculer
+      // (cas où l'utilisateur a peut-être sauté l'étape NLP)
+      print('⚠️ Pas de score pré-calculé dans productData');
+      print('⚠️ Cela signifie que l\'appel NLP n\'a pas été fait ou a échoué');
+      print('⚠️ Utilisation d\'un recalcul avec données par défaut (résultat: scores à 0.0)');
+      
+      // Afficher un message à l'utilisateur
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Attention: Le score est calculé avec des données limitées. Résultats non fiables.'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 4),
+          ),
+        );
+      }
+      
       final productName = productData['name']?.toString() ?? 
                          productData['product_name']?.toString() ?? 
                          'Produit';
@@ -755,11 +812,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         'ingredients_breakdown': ingredientsBreakdown,
       };
       
+      print('📤 Appel computeEcoScore avec ms3Data: $ms3Data');
       // Appeler le service de scoring
       final ecoScore = await _apiService.computeEcoScore(
         productName: productName,
         ms3Data: ms3Data,
       );
+      print('✅ computeEcoScore terminé: Score=${ecoScore.ecoScoreNumeric}');
       
       if (mounted) {
         Navigator.push(

@@ -50,38 +50,95 @@ class _ImageFormScreenState extends State<ImageFormScreen> {
       // Étape 2: Extraire le texte pour NLP
       final productData = parseResponse.productData;
       
-      // Priorité 1: Utiliser raw_text s'il est disponible (texte OCR brut)
-      String? nlpText = productData['raw_text']?.toString();
+      // Construire le texte pour NLP en utilisant les valeurs saisies par l'utilisateur
+      // Format exact: "Nom Marque, Poidsg, Composition"
+      // Exemple: "Lait Jaouda, 450g, Lait frais pasteurisé demi-écrémé..."
       
-      // Priorité 2: Construire le texte à partir des données extraites
-      if (nlpText == null || nlpText.isEmpty) {
-        final productName = productData['name']?.toString() ?? _nameController.text.trim();
-        final productWeight = productData['netWeight_g']?.toString() ?? _weightController.text.trim();
-        final composition = productData['composition']?.toString() ?? '';
-        
-        // Construire le texte au format attendu par NLP
-        // Format: "NomProduit Poids. ingrédient1, ingrédient2, ..."
-        nlpText = '$productName ${productWeight}g.';
-        if (composition.isNotEmpty) {
+      // Utiliser le nom saisi par l'utilisateur ou celui du produit tel quel
+      // (le 'name' contient déjà le nom complet, pas besoin d'ajouter la brand)
+      String productName = _nameController.text.trim().isNotEmpty 
+          ? _nameController.text.trim() 
+          : (productData['name']?.toString().trim() ?? '');
+      
+      final productWeight = _weightController.text.trim().isNotEmpty
+          ? _weightController.text.trim()
+          : (productData['netWeight_g']?.toString() ?? '100');
+      
+      // Priorité 1: Utiliser la composition si disponible
+      String? composition = productData['composition']?.toString().trim();
+      
+      // Priorité 2: Utiliser raw_text comme fallback pour les ingrédients
+      if ((composition == null || composition.isEmpty) && productData['raw_text'] != null) {
+        final rawText = productData['raw_text']?.toString().trim() ?? '';
+        composition = rawText;
+      }
+      
+      // Convertir le poids en entier (enlever les décimales si nécessaire)
+      String weightStr = productWeight;
+      if (weightStr.contains('.')) {
+        weightStr = weightStr.split('.').first;
+      }
+      
+      // Construire le texte au format exact: "NomComplet Poidsg. Composition"
+      // Exemple: "Vita-Weat Natural Ingredients 9 Grains Crispbread 250g. CRISPBREAD WHOLEGRAINS..."
+      String nlpText = '';
+      
+      if (productName.isNotEmpty) {
+        nlpText = productName;
+        if (weightStr.isNotEmpty) {
+          nlpText += ' ${weightStr}g.';
+        }
+        if (composition != null && composition.isNotEmpty) {
           nlpText += ' $composition';
         }
+      } else if (composition != null && composition.isNotEmpty) {
+        // Si pas de nom, utiliser la composition avec le poids
+        nlpText = '${weightStr}g. $composition';
+      } else {
+        nlpText = '$productName ${weightStr}g.';
       }
+      
+      // Nettoyer les espaces multiples
+      nlpText = nlpText.replaceAll(RegExp(r'\s+'), ' ').trim();
 
-      print('📝 Texte pour NLP: $nlpText');
+      print('📝 Texte pour NLP (image): "$nlpText" (longueur: ${nlpText.length})');
 
-      // Étape 3: Appeler NLP pour extraire les ingrédients
+      // Étape 3: Appeler NLP pour extraire les ingrédients et calculer le score complet
       try {
-        final nlpResponse = await _apiService.extractNLP(text: nlpText);
-        print('✅ Réponse NLP: $nlpResponse');
+        final ecoScoreResponse = await _apiService.extractNLPWithScore(text: nlpText);
+        print('✅ Réponse NLP complète reçue: Score ${ecoScoreResponse.ecoScoreNumeric} (${ecoScoreResponse.ecoScoreLetter})');
         
-        // Enrichir les données du produit avec les résultats NLP
-        if (nlpResponse['ingredients'] != null) {
-          productData['nlp_ingredients'] = nlpResponse['ingredients'];
-          productData['nlp_product_name'] = nlpResponse['product_name'];
-          productData['nlp_weight'] = nlpResponse['weight'];
-        }
+        // Stocker le score complet dans productData pour utilisation ultérieure
+        productData['eco_score'] = {
+          'score_id': ecoScoreResponse.scoreId,
+          'product_name': ecoScoreResponse.productName,
+          'eco_score_numeric': ecoScoreResponse.ecoScoreNumeric,
+          'eco_score_letter': ecoScoreResponse.ecoScoreLetter,
+          'confidence': ecoScoreResponse.confidence,
+          'impacts_scores': ecoScoreResponse.impactsScores,
+          'total_impacts': {
+            'co2_g': ecoScoreResponse.totalImpacts.co2G,
+            'water_L': ecoScoreResponse.totalImpacts.waterL,
+            'energy_MJ': ecoScoreResponse.totalImpacts.energyMJ,
+          },
+          'explanations': ecoScoreResponse.explanations,
+        };
+        
+        // Stocker aussi les ingrédients extraits pour l'affichage
+        // Les ingrédients sont dans la réponse mais on peut les extraire depuis les données du produit
+        // ou les obtenir séparément si nécessaire
       } catch (nlpError) {
         print('⚠️ Erreur NLP (continuons quand même): $nlpError');
+        // Afficher l'erreur à l'utilisateur mais continuer
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Avertissement NLP: $nlpError'),
+              backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
         // On continue même si NLP échoue
       }
 
