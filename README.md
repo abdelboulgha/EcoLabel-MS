@@ -20,6 +20,7 @@
   <a href="#-installation">Installation</a> •
   <a href="#-utilisation">Utilisation</a> •
   <a href="#-api">API</a> •
+  <a href="#ci-cd-pipeline-jenkins">CI/CD</a> •
   <a href="#-équipe">Équipe</a>
 </p>
 
@@ -264,6 +265,59 @@ static const String baseUrl = 'http://VOTRE_IP:8080';
 ### Données
 - **Agribalyse** : Base de données LCA pour l'impact environnemental
 - **BERT MS2** : Modèle NLP fine-tuné pour extraction d'ingrédients
+
+---
+
+## 🔁 CI/CD Pipeline (Jenkins)
+
+EcoLabel-MS intègre une **chaîne CI/CD complète** automatisée avec **Jenkins**, garantissant la qualité du code, l’analyse statique et le déploiement continu des microservices.
+
+### 🛠️ Outils CI/CD utilisés
+
+- **Jenkins** – Orchestration du pipeline CI/CD
+- **GitHub Webhooks** – Déclenchement automatique à chaque push
+- **SonarQube** – Analyse statique du code Python
+- **Docker & Docker Compose** – Build et déploiement des microservices
+- **Windows Jenkins Agent** – Exécution locale des jobs
+
+---
+
+### 🔄 Étapes du Pipeline
+
+Le pipeline est défini dans un **Jenkinsfile** situé à la racine du projet et s’exécute selon les étapes suivantes :
+
+1. **Clone Repository**
+   - Clonage automatique du dépôt GitHub
+
+2. **Prepare Model**
+   - Copie locale du modèle NLP (BERT) non versionné
+   - Injection du modèle dans le workspace Jenkins pour les microservices
+
+3. **Python Quality & Tests (Parallèle)**
+   - Installation des dépendances Python
+   - Exécution des tests unitaires (`pytest`)
+   - Validation par microservice :
+     - Gateway
+     - ParserProduit
+     - NLPIngredients
+     - LCALite
+     - Scoring
+
+4. **SonarQube Analysis (Parallèle)**
+   - Analyse statique indépendante pour chaque microservice
+   - Suivi de la qualité, dette technique et maintenabilité
+
+5. **Docker Build & Deploy**
+   - Build des images Docker
+   - Déploiement automatisé via Docker Compose
+
+---
+
+### 📊 Visualisation du Pipeline
+
+Le pipeline Jenkins offre une visualisation graphique claire, montrant l’exécution parallèle des microservices et l’état global du déploiement.
+
+<img width="1897" height="908" alt="image" src="https://github.com/user-attachments/assets/c30d7b58-2b19-4d6c-9315-cce4eee00abe" />
 
 ---
 
