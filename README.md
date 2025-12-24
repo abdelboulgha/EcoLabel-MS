@@ -322,3 +322,4 @@ Ce projet est développé dans un cadre académique. Tous droits réservés.
 <p align="center">
   <sub>Développé par l'équipe EcoLabel-MS</sub>
 </p>
+...

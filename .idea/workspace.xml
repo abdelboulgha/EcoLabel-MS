@@ -5,7 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="56670ec0-46eb-40dc-a535-2bef1aa7ce5d" name="Changes" comment="...">
-      <change beforePath="$PROJECT_DIR$/ecolabel_ms_flutter/lib/services/api_service.dart" beforeDir="false" afterPath="$PROJECT_DIR$/ecolabel_ms_flutter/lib/services/api_service.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -13,7 +13,8 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="30078" />
+    <option name="cachedIndexableFilesCount" value="30077" />
+    <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
@@ -25,6 +26,18 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;ahmed-elhamri&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/abdelboulgha/EcoLabel-MS.git&quot;,
+    &quot;accountId&quot;: &quot;914818b0-bf74-48e7-b15b-50051ea6aab4&quot;
+  }
+}</component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 7
 }</component>
@@ -45,7 +58,7 @@
     "ignore.virus.scanning.warn.message": "true",
     "junie.onboarding.icon.badge.shown": "true",
     "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "C:/Users/elham/OneDrive/Desktop/EMSI/S9/MICROSERVICES/Projet/EcoLabel-MS",
+    "last_opened_file_path": "C:/Users/elham/OneDrive/Desktop/EMSI/S9/MICROSERVICES/Projet/EcoLabel-MS/models",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -58,6 +71,7 @@
 }]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\elham\OneDrive\Desktop\EMSI\S9\MICROSERVICES\Projet\EcoLabel-MS\models" />
       <recent name="C:\Users\elham\OneDrive\Desktop\EMSI\S9\MICROSERVICES\Projet\EcoLabel-MS" />
       <recent name="C:\Users\elham\OneDrive\Desktop\EMSI\S9\MICROSERVICES\Projet\EcoLabel-MS\ParserProduit" />
       <recent name="C:\Users\elham\OneDrive\Desktop\EMSI\S9\MICROSERVICES\Projet\EcoLabel-MS\Scoring" />
@@ -97,7 +111,23 @@
       <option name="project" value="LOCAL" />
       <updated>1766452554648</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="...">
+      <option name="closed" value="true" />
+      <created>1766476762473</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1766476762473</updated>
+    </task>
+    <task id="LOCAL-00003" summary="...">
+      <option name="closed" value="true" />
+      <created>1766476885633</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1766476885633</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
