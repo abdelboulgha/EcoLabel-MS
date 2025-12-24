@@ -1,11 +1,12 @@
 pipeline {
     agent any
-    options {
-        skipDefaultCheckout(false)
-    }
+
     environment {
-        SONAR_HOST_URL = "http://localhost:9999"
-        SONAR_SCANNER = tool 'SonarQube-Scanner'
+        // ✅ Absolute Python path (WORKING on your machine)
+        PYTHON = "C:/Python313/python.exe"
+
+        // ✅ SonarQube (Docker-friendly)
+        SONAR_HOST_URL = "http://host.docker.internal:9999"
     }
 
     stages {
@@ -18,15 +19,15 @@ pipeline {
 
         stage('Python Quality & Tests') {
             parallel {
+
                 stage('Gateway') {
                     steps {
                         dir('Gateway') {
                             bat '''
-                            python -m venv venv
-                            venv\\Scripts\\activate
-                            pip install -r requirements.txt
-                            flake8 .
-                            pytest || exit 0
+                            %PYTHON% -m venv venv
+                            venv\\Scripts\\python -m pip install -r requirements.txt
+                            venv\\Scripts\\python -m flake8 .
+                            venv\\Scripts\\python -m pytest || exit 0
                             '''
                         }
                     }
@@ -36,11 +37,10 @@ pipeline {
                     steps {
                         dir('ParserProduit') {
                             bat '''
-                            python -m venv venv
-                            venv\\Scripts\\activate
-                            pip install -r requirements.txt
-                            flake8 .
-                            pytest || exit 0
+                            %PYTHON% -m venv venv
+                            venv\\Scripts\\python -m pip install -r requirements.txt
+                            venv\\Scripts\\python -m flake8 .
+                            venv\\Scripts\\python -m pytest || exit 0
                             '''
                         }
                     }
@@ -50,11 +50,10 @@ pipeline {
                     steps {
                         dir('NLPIngredients') {
                             bat '''
-                            python -m venv venv
-                            venv\\Scripts\\activate
-                            pip install -r requirements.txt
-                            flake8 .
-                            pytest || exit 0
+                            %PYTHON% -m venv venv
+                            venv\\Scripts\\python -m pip install -r requirements.txt
+                            venv\\Scripts\\python -m flake8 .
+                            venv\\Scripts\\python -m pytest || exit 0
                             '''
                         }
                     }
@@ -64,11 +63,10 @@ pipeline {
                     steps {
                         dir('LCALite') {
                             bat '''
-                            python -m venv venv
-                            venv\\Scripts\\activate
-                            pip install -r requirements.txt
-                            flake8 .
-                            pytest || exit 0
+                            %PYTHON% -m venv venv
+                            venv\\Scripts\\python -m pip install -r requirements.txt
+                            venv\\Scripts\\python -m flake8 .
+                            venv\\Scripts\\python -m pytest || exit 0
                             '''
                         }
                     }
@@ -78,11 +76,10 @@ pipeline {
                     steps {
                         dir('Scoring') {
                             bat '''
-                            python -m venv venv
-                            venv\\Scripts\\activate
-                            pip install -r requirements.txt
-                            flake8 .
-                            pytest || exit 0
+                            %PYTHON% -m venv venv
+                            venv\\Scripts\\python -m pip install -r requirements.txt
+                            venv\\Scripts\\python -m flake8 .
+                            venv\\Scripts\\python -m pytest || exit 0
                             '''
                         }
                     }
@@ -92,30 +89,34 @@ pipeline {
 
         stage('SonarQube Analysis') {
             parallel {
+
                 stage('Gateway Sonar') {
                     steps {
                         dir('Gateway') {
                             withSonarQubeEnv('Gateway') {
-                                bat """
+                                bat '''
                                 sonar-scanner ^
                                 -Dsonar.projectKey=Gateway ^
                                 -Dsonar.sources=. ^
-                                -Dsonar.language=py
-                                """
+                                -Dsonar.language=py ^
+                                -Dsonar.host.url=%SONAR_HOST_URL%
+                                '''
                             }
                         }
                     }
                 }
+
                 stage('ParserProduit Sonar') {
                     steps {
                         dir('ParserProduit') {
                             withSonarQubeEnv('Parser-Produit') {
-                                bat """
+                                bat '''
                                 sonar-scanner ^
                                 -Dsonar.projectKey=Parser-Produit ^
                                 -Dsonar.sources=. ^
-                                -Dsonar.language=py
-                                """
+                                -Dsonar.language=py ^
+                                -Dsonar.host.url=%SONAR_HOST_URL%
+                                '''
                             }
                         }
                     }
@@ -125,12 +126,13 @@ pipeline {
                     steps {
                         dir('NLPIngredients') {
                             withSonarQubeEnv('Nlp-Ingredients') {
-                                bat """
+                                bat '''
                                 sonar-scanner ^
                                 -Dsonar.projectKey=Nlp-Ingredients ^
                                 -Dsonar.sources=. ^
-                                -Dsonar.language=py
-                                """
+                                -Dsonar.language=py ^
+                                -Dsonar.host.url=%SONAR_HOST_URL%
+                                '''
                             }
                         }
                     }
@@ -140,12 +142,13 @@ pipeline {
                     steps {
                         dir('LCALite') {
                             withSonarQubeEnv('Lca-Lite') {
-                                bat """
+                                bat '''
                                 sonar-scanner ^
                                 -Dsonar.projectKey=Lca-Lite ^
                                 -Dsonar.sources=. ^
-                                -Dsonar.language=py
-                                """
+                                -Dsonar.language=py ^
+                                -Dsonar.host.url=%SONAR_HOST_URL%
+                                '''
                             }
                         }
                     }
@@ -155,12 +158,13 @@ pipeline {
                     steps {
                         dir('Scoring') {
                             withSonarQubeEnv('Scoring') {
-                                bat """
+                                bat '''
                                 sonar-scanner ^
                                 -Dsonar.projectKey=Scoring ^
                                 -Dsonar.sources=. ^
-                                -Dsonar.language=py
-                                """
+                                -Dsonar.language=py ^
+                                -Dsonar.host.url=%SONAR_HOST_URL%
+                                '''
                             }
                         }
                     }
@@ -178,6 +182,4 @@ pipeline {
             }
         }
     }
-
-
 }
