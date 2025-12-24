@@ -5,7 +5,7 @@ pipeline {
     }
     environment {
         SONAR_HOST_URL = "http://localhost:9999"
-        SONAR_SCANNER = tool 'SonarScanner'
+        SONAR_SCANNER = tool 'SonarQube-Scanner'
     }
 
     stages {
