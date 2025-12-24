@@ -8,3 +8,5 @@ torch
 discover
 config
 protobuf
+pytest
+flake8
