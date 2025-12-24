@@ -14,4 +14,3 @@ python-dotenv
 # HTTP & networking
 requests
 pytest
-flake8

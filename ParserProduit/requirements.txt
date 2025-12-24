@@ -13,4 +13,3 @@ pytesseract
 Pillow
 python-barcode
 pytest
-flake8

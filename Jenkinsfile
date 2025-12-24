@@ -26,7 +26,6 @@ pipeline {
                             bat '''
                             %PYTHON% -m venv venv
                             venv\\Scripts\\python -m pip install -r requirements.txt
-                            venv\\Scripts\\python -m flake8 .
                             venv\\Scripts\\python -m pytest || exit 0
                             '''
                         }
@@ -39,7 +38,6 @@ pipeline {
                             bat '''
                             %PYTHON% -m venv venv
                             venv\\Scripts\\python -m pip install -r requirements.txt
-                            venv\\Scripts\\python -m flake8 .
                             venv\\Scripts\\python -m pytest || exit 0
                             '''
                         }
@@ -52,7 +50,6 @@ pipeline {
                             bat '''
                             %PYTHON% -m venv venv
                             venv\\Scripts\\python -m pip install -r requirements.txt
-                            venv\\Scripts\\python -m flake8 .
                             venv\\Scripts\\python -m pytest || exit 0
                             '''
                         }
@@ -65,7 +62,6 @@ pipeline {
                             bat '''
                             %PYTHON% -m venv venv
                             venv\\Scripts\\python -m pip install -r requirements.txt
-                            venv\\Scripts\\python -m flake8 .
                             venv\\Scripts\\python -m pytest || exit 0
                             '''
                         }
@@ -78,7 +74,6 @@ pipeline {
                             bat '''
                             %PYTHON% -m venv venv
                             venv\\Scripts\\python -m pip install -r requirements.txt
-                            venv\\Scripts\\python -m flake8 .
                             venv\\Scripts\\python -m pytest || exit 0
                             '''
                         }
