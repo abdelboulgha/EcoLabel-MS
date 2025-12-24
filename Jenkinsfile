@@ -17,6 +17,16 @@ pipeline {
             }
         }
 
+        stage('Prepare Model') {
+            steps {
+                echo 'Copying ML model into workspace root...'
+                bat '''
+                if not exist "models" mkdir models
+                xcopy /E /I /Y "C:\\Users\\elham\\OneDrive\\Documents\\models" "models"
+                '''
+            }
+        }
+
         stage('Python Quality & Tests') {
             parallel {
 
